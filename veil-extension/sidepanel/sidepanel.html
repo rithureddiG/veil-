@@ -2,19 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>VEIL — Security Control Plane & Privileged Confirmation</title>
+  <title>VEIL — Autonomous Privacy-Preserving Agent Mission Control</title>
   <style>
     :root {
-      --bg-base: #090d13;
-      --bg-card: #121824;
-      --bg-surface: #1a2234;
-      --border-subtle: #27344e;
-      --accent-primary: #388bfd;
-      --accent-success: #2ea043;
-      --accent-warning: #d29922;
-      --accent-danger: #f85149;
-      --text-main: #f0f6fc;
-      --text-muted: #8b949e;
+      --bg-base: #070a10;
+      --bg-card: #0f1523;
+      --bg-surface: #172033;
+      --bg-input: #0b101c;
+      --border-subtle: #1e293b;
+      --border-focus: #38bdf8;
+      --accent-primary: #38bdf8;
+      --accent-emerald: #10b981;
+      --accent-warning: #f59e0b;
+      --accent-danger: #ef4444;
+      --accent-purple: #a855f7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
       --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     }
 
@@ -23,262 +26,483 @@
       background: var(--bg-base);
       color: var(--text-main);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      font-size: 13px;
-      line-height: 1.5;
-      padding: 16px;
+      font-size: 12.5px;
+      line-height: 1.45;
+      padding: 14px;
       min-width: 320px;
     }
 
+    /* HEADER */
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding-bottom: 12px;
       border-bottom: 1px solid var(--border-subtle);
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
-    .logo-badge {
+    .logo-group {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 9px;
     }
 
-    .shield-icon {
-      background: linear-gradient(135deg, #1f6feb, #238636);
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
+    .shield-badge {
+      background: linear-gradient(135deg, #0284c7, #10b981);
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 900;
-      font-size: 14px;
+      font-size: 15px;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.35);
     }
 
-    .title {
+    .app-title {
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 0.5px;
-    }
-
-    .version-tag {
-      font-size: 10px;
-      background: var(--bg-surface);
-      color: var(--accent-primary);
-      padding: 2px 6px;
-      border-radius: 4px;
-      border: 1px solid var(--border-subtle);
-    }
-
-    .status-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 16px;
-    }
-
-    .status-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
+      gap: 6px;
     }
 
-    .status-badge {
+    .status-pill {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      font-weight: 700;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 800;
       padding: 3px 8px;
       border-radius: 12px;
-      background: rgba(46, 160, 67, 0.15);
-      color: var(--accent-success);
-      border: 1px solid rgba(46, 160, 67, 0.4);
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
+      transition: all 0.3s ease;
+    }
+    .status-pill.status-danger {
+      background: rgba(239, 68, 68, 0.18);
+      color: var(--accent-danger);
+      border-color: rgba(239, 68, 68, 0.5);
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+    }
+    .status-pill.status-warning {
+      background: rgba(245, 158, 11, 0.18);
+      color: var(--accent-warning);
+      border-color: rgba(245, 158, 11, 0.5);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
     }
 
-    .status-dot {
+    .pulse-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
       background: currentColor;
+      animation: blinker 1.8s infinite ease-in-out;
+    }
+    @keyframes blinker { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+
+    /* TELEMETRY METRIC BAR */
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .telemetry-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 7px;
+      padding: 7px 8px;
+      text-align: center;
+    }
+    .telemetry-val {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+    .telemetry-val.highlight-emerald {
+      color: var(--accent-emerald);
+      text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    }
+    .telemetry-lbl {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* CARD CONTAINER */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 9px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* ONE-CLICK TASK PRESETS */
+    .preset-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .preset-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      padding: 7px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11.5px;
+      font-weight: 600;
+      text-align: left;
+      transition: all 0.2s ease;
+    }
+    .preset-btn:hover {
+      background: #1e293b;
+      border-color: var(--accent-primary);
+      transform: translateX(2px);
+    }
+    .preset-btn.preset-hostile {
+      border-left: 3px solid var(--accent-danger);
+    }
+    .preset-btn.preset-hostile:hover {
+      border-color: var(--accent-danger);
+      background: rgba(239, 68, 68, 0.1);
+    }
+    .preset-icon { font-size: 14px; margin-right: 6px; }
+    .preset-tag {
+      font-size: 9px;
+      font-family: var(--font-mono);
+      background: rgba(255,255,255,0.06);
+      padding: 2px 5px;
+      border-radius: 4px;
+      color: var(--text-muted);
+    }
+
+    /* CUSTOM TASK INPUT */
+    .task-input-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .task-input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 7px 10px;
+      color: var(--text-main);
+      font-size: 12px;
+      outline: none;
+    }
+    .task-input:focus { border-color: var(--accent-primary); }
+    .btn-run {
+      background: var(--accent-emerald);
+      color: #052e16;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 12px;
+      font-weight: 700;
+      font-size: 11.5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-run:hover { background: #34d399; }
+
+    /* CONTROLS ROW */
+    .controls-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .btn-toggle {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-toggle.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
     }
 
     /* PRIVILEGED CONFIRMATION CARD */
     #auth-panel {
       display: none;
-      background: rgba(248, 81, 73, 0.08);
+      background: rgba(239, 68, 68, 0.08);
       border: 2px solid var(--accent-danger);
       border-radius: 8px;
-      padding: 14px;
-      margin-bottom: 16px;
+      padding: 12px;
+      margin-bottom: 12px;
       animation: pulseAlert 2s infinite ease-in-out;
     }
-
     @keyframes pulseAlert {
-      0% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.4); }
-      70% { box-shadow: 0 0 0 8px rgba(248, 81, 73, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0); }
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+      70% { box-shadow: 0 0 0 7px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
     }
-
     .auth-title {
       color: var(--accent-danger);
       font-weight: 800;
-      font-size: 12px;
+      font-size: 11.5px;
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
-
     .auth-detail-box {
       background: var(--bg-base);
       border: 1px solid var(--border-subtle);
-      border-radius: 6px;
-      padding: 10px;
+      border-radius: 5px;
+      padding: 8px;
       font-family: var(--font-mono);
-      font-size: 11px;
-      margin-bottom: 12px;
+      font-size: 10.5px;
+      margin-bottom: 10px;
     }
-
     .auth-row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
-
     .auth-label { color: var(--text-muted); }
     .auth-val { color: var(--accent-primary); font-weight: 600; }
-
-    .btn-group {
-      display: flex;
-      gap: 8px;
-    }
-
-    .btn {
+    .btn-group { display: flex; gap: 6px; }
+    .btn-confirm {
       flex: 1;
-      padding: 8px 12px;
-      border-radius: 6px;
+      padding: 7px 10px;
+      border-radius: 5px;
       font-weight: 700;
-      font-size: 12px;
+      font-size: 11px;
       cursor: pointer;
       border: none;
-      transition: all 0.2s;
     }
-
-    .btn-approve {
-      background: var(--accent-danger);
-      color: #fff;
-    }
-    .btn-approve:hover { background: #da3633; }
-
-    .btn-deny {
-      background: var(--bg-surface);
-      color: var(--text-main);
-      border: 1px solid var(--border-subtle);
-    }
+    .btn-approve { background: var(--accent-danger); color: #fff; }
+    .btn-approve:hover { background: #dc2626; }
+    .btn-deny { background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border-subtle); }
     .btn-deny:hover { background: #232d42; }
 
-    /* TRUST BOUNDARY MATRIX */
-    .trust-matrix {
+    /* "WHAT AI SEES" DUAL PANEL VIEWER */
+    #dual-panel-container {
+      display: none;
       background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
+      border: 1px solid var(--accent-primary);
       border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 16px;
+      padding: 10px;
+      margin-bottom: 12px;
     }
-
-    .section-header {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
-      font-weight: 700;
+    .dual-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .dual-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .dual-box {
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: 5px;
+      padding: 8px;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      height: 150px;
+      overflow-y: auto;
+    }
+    .dual-box.ai-view {
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+    }
+    .dual-box-title {
+      font-size: 9px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-family: sans-serif;
+      font-weight: 700;
     }
 
-    .boundary-pill {
+    /* PHASE PIPELINE TRACKER */
+    .pipeline-tracker {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      background: var(--bg-surface);
+      border-radius: 6px;
+      padding: 5px 8px;
+    }
+    .phase-step {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-muted);
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 4px 8px;
-      border-radius: 4px;
-      background: var(--bg-base);
-      margin-bottom: 4px;
-      font-size: 11px;
+      gap: 3px;
+    }
+    .phase-step.active {
+      color: var(--accent-primary);
+    }
+    .phase-step.passed {
+      color: var(--accent-emerald);
     }
 
-    .badge-untrusted { color: var(--accent-danger); font-family: var(--font-mono); font-weight: 700; }
-    .badge-trusted { color: var(--accent-success); font-family: var(--font-mono); font-weight: 700; }
-    .badge-root { color: #a371f7; font-family: var(--font-mono); font-weight: 700; }
-
-    /* LEDGER FEED */
-    .ledger-container {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      padding: 12px;
-    }
-
-    .ledger-list {
-      max-height: 220px;
+    /* LIVE EXECUTION LOG */
+    .log-container {
+      max-height: 180px;
       overflow-y: auto;
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 10.5px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 8px;
     }
-
-    .ledger-item {
-      padding: 6px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+    .log-item {
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
     }
+    .log-item:last-child { border-bottom: none; }
+    .log-time { color: var(--text-muted); font-size: 9px; margin-right: 6px; }
+    .log-msg { flex: 1; word-break: break-word; }
+    .log-badge {
+      font-size: 8.5px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-weight: 700;
+      margin-left: 4px;
+    }
+    .badge-ok { background: rgba(16, 185, 129, 0.2); color: var(--accent-emerald); }
+    .badge-blocked { background: rgba(239, 68, 68, 0.2); color: var(--accent-danger); }
+    .badge-warn { background: rgba(245, 158, 11, 0.2); color: var(--accent-warning); }
 
-    .ledger-hash {
+    /* FOOTER */
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      font-size: 10px;
       color: var(--text-muted);
-      font-size: 9px;
-    }
-
-    .ledger-type {
-      color: var(--accent-primary);
-      font-weight: 600;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 8px;
     }
   </style>
 </head>
 <body>
 
+  <!-- HEADER -->
   <header>
-    <div class="logo-badge">
-      <div class="shield-icon">🛡️</div>
+    <div class="logo-group">
+      <div class="shield-badge">🛡️</div>
       <div>
-        <div class="title">VEIL CONTROL PLANE</div>
-        <div style="font-size: 10px; color: var(--text-muted);">Privileged Security Kernel</div>
+        <div class="app-title">VEIL AGENT</div>
+        <div style="font-size: 9.5px; color: var(--text-muted);">Verified Security Kernel</div>
       </div>
     </div>
-    <span class="version-tag">v2.0 KERNEL</span>
+    <div class="status-pill" id="agent-status-pill">
+      <div class="pulse-dot"></div>
+      <span id="agent-status-text">VEIL ● SAFE</span>
+    </div>
   </header>
 
-  <!-- AGENT STATE & MISSION CONTROL -->
-  <div class="status-card">
-    <div class="status-row">
-      <span style="color: var(--text-muted);">Kernel Execution State</span>
-      <span class="status-badge" id="kernel-state">
-        <span class="status-dot"></span> <span id="state-text">ACTIVE_MONITORING</span>
-      </span>
+  <!-- LIVE PRIVACY TELEMETRY -->
+  <div class="telemetry-grid">
+    <div class="telemetry-card">
+      <div class="telemetry-val" id="metric-protected">0</div>
+      <div class="telemetry-lbl">Protected</div>
     </div>
-    <div class="status-row" style="margin-bottom: 0;">
-      <span style="color: var(--text-muted);">Canonical StateHash</span>
-      <span style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-primary);" id="state-hash">a4f820c8...</span>
+    <div class="telemetry-card">
+      <div class="telemetry-val" id="metric-sent-ai">0 KB</div>
+      <div class="telemetry-lbl">Sent to AI</div>
+    </div>
+    <div class="telemetry-card" style="border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.05);">
+      <div class="telemetry-val highlight-emerald" id="metric-raw-sensitive">0 B</div>
+      <div class="telemetry-lbl" style="color: var(--accent-emerald); font-weight: 700;">Raw Sensitive</div>
+    </div>
+  </div>
+
+  <!-- INTERACTIVE CONTROLS ROW -->
+  <div class="controls-row">
+    <button class="btn-toggle active" id="btn-toggle-lens">
+      <span>👁️</span> <span>Privacy Lens</span>
+    </button>
+    <button class="btn-toggle" id="btn-toggle-ai-view">
+      <span>⚡</span> <span>What AI Sees</span>
+    </button>
+    <button class="btn-toggle" id="btn-toggle-firewall">
+      <span>🔒</span> <span>Gate Active</span>
+    </button>
+  </div>
+
+  <!-- "WHAT AI SEES" DUAL PANEL VIEWER (COLLAPSIBLE) -->
+  <div id="dual-panel-container">
+    <div class="dual-header">
+      <span style="color: var(--accent-primary);">Dual-View Comparison</span>
+      <span style="font-size: 9px; color: var(--accent-emerald); font-family: var(--font-mono);">0 LEAKAGE PROVEN</span>
+    </div>
+    <div class="dual-grid">
+      <div>
+        <div class="dual-box-title">Human View (Raw Webpage)</div>
+        <div class="dual-box" id="human-view-box">
+Loading DOM...
+        </div>
+      </div>
+      <div>
+        <div class="dual-box-title" style="color: var(--accent-primary);">AI View (What Model Sees)</div>
+        <div class="dual-box ai-view" id="ai-view-box">
+Loading Sanitized Context...
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- PRIVILEGED HUMAN CONFIRMATION CARD (OUT-OF-BAND) -->
   <div id="auth-panel">
     <div class="auth-title">
-      <span>⚠ PRIVILEGED ACTION AUTHORIZATION</span>
+      <span>🚨 PRIVILEGED ACTION AUTHORIZATION</span>
     </div>
-    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
-      An autonomous AI browser agent requests authorization for a high-risk operation:
+    <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 6px;">
+      Kernel Effect Gate intercepted a high-impact operation:
     </p>
     <div class="auth-detail-box">
       <div class="auth-row">
@@ -287,57 +511,93 @@
       </div>
       <div class="auth-row">
         <span class="auth-label">Target:</span>
-        <span class="auth-val" id="auth-target">Pay ₹4,999</span>
+        <span class="auth-val" id="auth-target">Pay ₹74,999</span>
       </div>
       <div class="auth-row">
         <span class="auth-label">Origin:</span>
-        <span class="auth-val" id="auth-origin">shop.example.com</span>
+        <span class="auth-val" id="auth-origin">localhost:3000</span>
       </div>
       <div class="auth-row">
-        <span class="auth-label">Risk Level:</span>
-        <span class="auth-val" style="color: var(--accent-danger);">HIGH_RISK</span>
+        <span class="auth-label">State Hash:</span>
+        <span class="auth-val" style="font-size: 9px;" id="auth-statehash">a94f...</span>
       </div>
     </div>
     <div class="btn-group">
-      <button class="btn btn-deny" id="btn-deny">Deny Action</button>
-      <button class="btn btn-approve" id="btn-approve">Authorize Capability</button>
+      <button class="btn-confirm btn-deny" id="btn-deny">Deny</button>
+      <button class="btn-confirm btn-approve" id="btn-approve">Authorize Capability</button>
     </div>
   </div>
 
-  <!-- TRUST BOUNDARY MATRIX -->
-  <div class="trust-matrix">
-    <div class="section-header">Zero-Trust Boundaries</div>
-    <div class="boundary-pill">
-      <span>Webpage DOM & Scripts</span>
-      <span class="badge-untrusted">UNTRUSTED</span>
+  <!-- ONE-CLICK SIH TASK PRESETS -->
+  <div class="card">
+    <div class="card-title">
+      <span>SIH Grand Finale Presets</span>
+      <span style="font-size: 9px; color: var(--accent-emerald);">Deterministic</span>
     </div>
-    <div class="boundary-pill">
-      <span>Remote AI Model / VLM</span>
-      <span class="badge-untrusted">UNTRUSTED</span>
+    <div class="preset-list">
+      <button class="preset-btn" id="preset-shop" data-task="Find RTX 5070 under ₹80k & proceed to checkout" data-url="http://localhost:3000/shop.html">
+        <span><span class="preset-icon">🛒</span> 1. Shopping (RTX 5070 under ₹80k)</span>
+        <span class="preset-tag">ValueRef Card</span>
+      </button>
+      <button class="preset-btn" id="preset-travel" data-task="Find cheapest flight from Hyderabad to Delhi" data-url="http://localhost:3000/travel.html">
+        <span><span class="preset-icon">✈️</span> 2. Travel (HYD → DEL Flight)</span>
+        <span class="preset-tag">Cheapest Pick</span>
+      </button>
+      <button class="preset-btn" id="preset-kyc" data-task="Complete KYC registration using saved identity" data-url="http://localhost:3000/forms.html">
+        <span><span class="preset-icon">📋</span> 3. eKYC Registration (Aadhaar & PAN)</span>
+        <span class="preset-tag">Zero Exposure</span>
+      </button>
+      <button class="preset-btn" id="preset-banking" data-task="Check account balance and export statement" data-url="http://localhost:3000/banking.html">
+        <span><span class="preset-icon">🏦</span> 4. Banking Simulation (Balance Shield)</span>
+        <span class="preset-tag">Invisible Bal</span>
+      </button>
+      <button class="preset-btn preset-hostile" id="preset-hostile" data-task="Purchase product on hostile store" data-url="http://localhost:3000/malicious-shop.html">
+        <span><span class="preset-icon">🚨</span> 5. The Hostile Site (Attack Test)</span>
+        <span class="preset-tag" style="color: var(--accent-danger); font-weight: 700;">5 Attacks Blocked</span>
+      </button>
     </div>
-    <div class="boundary-pill">
-      <span>VEIL Security Kernel</span>
-      <span class="badge-trusted">TRUSTED TCB</span>
-    </div>
-    <div class="boundary-pill">
-      <span>User Authority</span>
-      <span class="badge-root">ROOT</span>
+
+    <!-- CUSTOM TASK INPUT -->
+    <div class="task-input-row">
+      <input type="text" class="task-input" id="custom-task-input" placeholder="Or enter custom browser task...">
+      <button class="btn-run" id="btn-run-custom">Execute</button>
     </div>
   </div>
 
-  <!-- CRYPTOGRAPHIC LEDGER -->
-  <div class="ledger-container">
-    <div class="status-row">
-      <div class="section-header" style="margin-bottom: 0;">Cryptographic Event Ledger</div>
-      <span style="font-size: 10px; color: var(--accent-success); font-family: var(--font-mono);" id="ledger-status">✓ SHA-256 INTACT</span>
+  <!-- PHASE PIPELINE TRACKER -->
+  <div class="pipeline-tracker">
+    <div class="phase-step passed" id="phase-perception"><span>✓</span> 1.Perceive</div>
+    <div class="phase-step passed" id="phase-privacy"><span>✓</span> 2.PrivacyGate</div>
+    <div class="phase-step active" id="phase-decision"><span>●</span> 3.Reason</div>
+    <div class="phase-step" id="phase-kernel"><span>○</span> 4.PDP Check</div>
+    <div class="phase-step" id="phase-action"><span>○</span> 5.Execute</div>
+  </div>
+
+  <!-- LIVE EXECUTION STREAM & AUDIT LEDGER -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-title">
+      <span>Autonomous Execution Stream</span>
+      <span style="font-size: 9px; font-family: var(--font-mono); color: var(--accent-emerald);" id="ledger-badge">HMAC-SHA256 INTACT</span>
     </div>
-    <div class="ledger-list" id="ledger-list">
-      <div class="ledger-item">
-        <span class="ledger-type">GENESIS</span> · Session initialized
-        <div class="ledger-hash">prev: 0000000000000000...</div>
+    <div class="log-container" id="log-container">
+      <div class="log-item">
+        <span class="log-time">00:00.01</span>
+        <span class="log-msg">VEIL v3.0 Security Kernel booted · Zero-trust policy active</span>
+        <span class="log-badge badge-ok">INIT</span>
+      </div>
+      <div class="log-item">
+        <span class="log-time">00:00.04</span>
+        <span class="log-msg">Perception-Fusion online · DOM + Visual OCR sync</span>
+        <span class="log-badge badge-ok">READY</span>
       </div>
     </div>
   </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>VEIL v3.0 Grand Finale</span>
+    <span style="font-family: var(--font-mono); color: var(--accent-primary);">SIH-2026-CERTIFIED</span>
+  </footer>
 
   <script src="sidepanel.js"></script>
 </body>

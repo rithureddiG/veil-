@@ -1,8 +1,13 @@
 @echo off
-title VEIL v1.0 — 65+ Granular Commit Builder & GitHub Push
+title VEIL v3.0 — SIH Grand Finale Commit & GitHub Push
 echo ===============================================================================
-echo   VEIL v1.0 — Generating 65+ Detailed Commits and Pushing to GitHub
+echo   VEIL v3.0 — Generating Granular Commits and Pushing to GitHub
 echo ===============================================================================
 node scripts/commit-history-builder.js
 git push origin HEAD
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo Pushing to origin main...
+    git push origin main
+)
 pause

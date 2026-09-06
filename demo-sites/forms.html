@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>National Digital eKYC Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="index.html" class="brand">
+      <div class="brand-icon" style="background: #d29922; color: #fff;">🏛️</div>
+      <span>National Digital eKYC Service</span>
+    </a>
+    <div class="nav-links">
+      <span class="badge-tag badge-demo">TASK 3: FORMS / eKYC</span>
+      <a href="index.html" class="nav-link">Portal</a>
+      <span class="nav-link">Standard Ver. 2.1</span>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="page-header" style="text-align: center; max-width: 650px; margin: 0 auto 28px auto;">
+      <h1 class="page-title">Citizen Identity Verification &amp; eKYC Form</h1>
+      <p class="page-desc">Complete your secure citizen profile enrollment. Sensitive national identification data is protected by on-device privacy policies.</p>
+    </div>
+
+    <div class="form-panel">
+      <div class="privacy-callout">
+        <div class="privacy-callout-icon">🛡️</div>
+        <div>
+          <strong>VEIL Privacy Invariant P1:</strong> Aadhaar UID, PAN Card, and contact info are resolved exclusively on-device via local <code>ValueRef</code> references.
+        </div>
+      </div>
+
+      <form id="ekyc-registration-form" onsubmit="handleFormSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" for="citizen-name">Full Legal Name (as per ID)</label>
+          <input class="form-input" id="citizen-name" name="fullname" type="text" placeholder="e.g. Sreeshanth Reddy" autocomplete="name">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label" for="citizen-email">Primary Email Address</label>
+            <input class="form-input" id="citizen-email" name="email" type="email" placeholder="e.g. sreeshanth@example.com" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="citizen-phone">Contact Mobile Number</label>
+            <input class="form-input" id="citizen-phone" name="phone" type="tel" placeholder="+91 98765-43210" autocomplete="tel">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label" for="citizen-aadhaar">12-Digit Aadhaar UID</label>
+            <input class="form-input form-input-masked" id="citizen-aadhaar" name="aadhaar" type="text" placeholder="•••• •••• 9012" maxlength="14">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="citizen-pan">Permanent Account Number (PAN)</label>
+            <input class="form-input form-input-masked" id="citizen-pan" name="pan" type="text" placeholder="ABCDE1234F" maxlength="10">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="citizen-address">Permanent Residential Address</label>
+          <input class="form-input" id="citizen-address" name="address" type="text" placeholder="Flat 402, Cyber Heights, Hitec City, Hyderabad, 500081">
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+          <button type="reset" class="btn btn-secondary" style="flex: 1;">Reset Form</button>
+          <button type="submit" class="btn btn-primary" style="flex: 2;" id="submit-ekyc-btn">
+            Submit eKYC Verification
+          </button>
+        </div>
+      </form>
+
+      <div id="ekyc-success-banner" style="display: none; margin-top: 20px; padding: 18px; background: rgba(46, 160, 67, 0.15); border: 1px solid var(--accent-green); border-radius: var(--radius-sm); text-align: center;">
+        <div style="font-size: 28px; margin-bottom: 6px;">🏛️</div>
+        <strong style="color: var(--accent-green); font-size: 16px;">Citizen eKYC Registered Successfully!</strong>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Verified on-device. Zero Aadhaar or PAN plain-text bytes transmitted to external AI models.</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      document.getElementById('ekyc-success-banner').style.display = 'block';
+      document.getElementById('submit-ekyc-btn').disabled = true;
+      document.getElementById('submit-ekyc-btn').textContent = '✔ eKYC Submitted';
+    }
+  </script>
+</body>
+</html>

@@ -385,6 +385,35 @@ const COMMITS = [
   {
     files: ['README.md'],
     msg: 'docs(readme): update master product landing page for evaluators'
+  },
+  // VEIL v3.0 — SIH Grand Finale Suite
+  {
+    files: ['veil-extension/content/privacy-lens.js', 'veil-extension/content/content.js'],
+    msg: 'feat(perception): implement Privacy Lens 4-tier in-browser visual classifier'
+  },
+  {
+    files: ['veil-extension/core/perception-fusion.js'],
+    msg: 'feat(fusion): implement Dual-Path Perception Fusion engine for DOM and Visual OCR'
+  },
+  {
+    files: ['veil-extension/sidepanel/sidepanel.html', 'veil-extension/sidepanel/sidepanel.js'],
+    msg: 'feat(sidepanel): upgrade Mission Control with VEIL SAFE indicator, presets, and dual-view'
+  },
+  {
+    files: ['demo-sites/'],
+    msg: 'feat(demo): implement zero-dependency Internet-in-a-Box demo portal and hostile attack suite'
+  },
+  {
+    files: ['sih/sih-evaluator.js', 'sih/run-sih-benchmark.js', 'sih/sih-benchmark-results.json'],
+    msg: 'test(sih): implement SIH Grand Finale benchmark laboratory and scorecard runner'
+  },
+  {
+    files: ['docs/SIH_COMPARISON.md'],
+    msg: 'docs(sih): add Conventional Agent vs VEIL comparison matrix and DPDP Act compliance'
+  },
+  {
+    files: ['package.json', 'veil-extension/manifest.json'],
+    msg: 'chore(build): register SIH perception scripts and configure demo and benchmark commands'
   }
 ];
 

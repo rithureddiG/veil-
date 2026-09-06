@@ -40,6 +40,14 @@
     ? require('./state-hasher.js')
     : (typeof window !== 'undefined' ? window.VeilStateHasher : null);
 
+  const pdp = typeof require !== 'undefined'
+    ? require('./kernel/policy-decision-point.js')
+    : (typeof window !== 'undefined' ? (window.VeilPDP || window.VeilPolicyDecisionPoint) : null);
+
+  const effectGate = typeof require !== 'undefined'
+    ? require('./kernel/enforcement/effect-gate.js')
+    : (typeof window !== 'undefined' ? window.VeilEffectGate : null);
+
   /**
    * Orchestrates multi-step autonomous goal execution with capability gating.
    */
@@ -141,36 +149,65 @@
         return result;
       }
 
-      // --- STEP 4: VALIDATION & POLICY EVALUATION ---
+      // --- STEP 4: VALIDATION & POLICY EVALUATION (PDP Authority) ---
       state = STATES.VALIDATING;
       let targetElement = resolveTargetFn(action.target, getDoc());
-      const risk = classifyRiskFn(action, targetElement, sensitiveElements);
+      const origin = (typeof location !== 'undefined' && location.origin) || 'localhost';
+      const targetFp = stateHasher && stateHasher.computeElementFingerprint && targetElement
+        ? stateHasher.computeElementFingerprint(targetElement)
+        : ((action.target && action.target.id) || 'any');
 
-      recordEventFn('ACTION_RISK_EVALUATED', 'safety_guard', { step: currentStep, level: risk.level, allowed: risk.allowed, reason: risk.reason });
+      // 4a. Consult Policy Decision Point (PDP)
+      let pdpDecision = null;
+      if (pdp && pdp.evaluate) {
+        pdpDecision = pdp.evaluate({
+          proposal: action,
+          targetElement,
+          targetFingerprint: targetFp,
+          origin,
+          stateHash: currentStateHash,
+          sensitiveElements
+        });
+      }
 
-      if (!risk.allowed && !risk.requiresConfirmation) {
+      // Reconcile risk classification with PDP decision
+      const risk = classifyRiskFn ? classifyRiskFn(action, targetElement, sensitiveElements) : {
+        level: pdpDecision ? pdpDecision.riskLevel : 'SAFE',
+        allowed: pdpDecision ? (pdpDecision.allowed || pdpDecision.requiresHuman) : true,
+        requiresConfirmation: pdpDecision ? pdpDecision.requiresHuman : false,
+        reason: pdpDecision ? pdpDecision.reason : 'Policy evaluated'
+      };
+
+      recordEventFn('ACTION_RISK_EVALUATED', 'safety_guard', {
+        step: currentStep,
+        level: risk.level,
+        allowed: risk.allowed,
+        reason: risk.reason,
+        pdpDecision: pdpDecision ? pdpDecision.decision : 'N/A'
+      });
+
+      const isExplicitlyDenied = (pdpDecision && pdpDecision.decision === 'DENY') || (!risk.allowed && !risk.requiresConfirmation);
+      if (isExplicitlyDenied) {
         state = STATES.BLOCKED;
-        recordEventFn('ACTION_BLOCKED', 'safety_guard', { step: currentStep, reason: risk.reason });
+        const denyReason = (pdpDecision && pdpDecision.reason) || risk.reason;
+        recordEventFn('ACTION_BLOCKED', 'safety_guard', { step: currentStep, reason: denyReason });
         stepTraces.push({
           step: currentStep,
           action: actionType,
           target: (action.target && (action.target.description || action.target.text)) || 'Unknown Target',
           durationMs: Math.round(performance.now() - stepT0),
           status: 'BLOCKED',
-          reason: risk.reason
+          reason: denyReason
         });
-        const result = { ok: false, state, reason: `Action Blocked by Safety Guard: ${risk.reason}`, stepTraces, totalMs: Math.round(performance.now() - t0) };
+        const result = { ok: false, state, reason: `Action Blocked by Safety Guard: ${denyReason}`, stepTraces, totalMs: Math.round(performance.now() - t0) };
         onComplete(result);
         return result;
       }
 
-      const origin = (typeof location !== 'undefined' && location.origin) || 'localhost';
-      const targetFp = stateHasher && stateHasher.computeElementFingerprint && targetElement
-        ? stateHasher.computeElementFingerprint(targetElement)
-        : ((action.target && action.target.id) || 'any');
-
       // --- STEP 4b: PRIVILEGED HUMAN CONFIRMATION GATE ---
-      if (risk.requiresConfirmation || risk.level === 'HIGH_RISK') {
+      let userApproved = false;
+      const requiresHuman = risk.requiresConfirmation || risk.level === 'HIGH_RISK' || (pdpDecision && pdpDecision.requiresHuman);
+      if (requiresHuman) {
         state = STATES.WAITING_FOR_HUMAN;
         onStepUpdate({
           step: currentStep,
@@ -179,7 +216,7 @@
         });
         recordEventFn('HUMAN_CONFIRMATION_REQUESTED', 'safety_guard', { step: currentStep, action: actionType, target: action.target });
 
-        const userApproved = await confirmationFn({
+        userApproved = await confirmationFn({
           action,
           targetElement,
           targetFingerprint: targetFp,
@@ -206,6 +243,13 @@
 
         recordEventFn('HUMAN_CONFIRMATION_APPROVED', 'safety_guard', { step: currentStep });
 
+        // Update PDP decision state post-approval
+        if (pdpDecision) {
+          pdpDecision.decision = 'ALLOW';
+          pdpDecision.allowed = true;
+          pdpDecision.humanApproved = true;
+        }
+
         // --- STEP 4c: PRE-EXECUTION REVALIDATION (TOCTOU / State integrity check) ---
         state = STATES.REVALIDATING;
         onStepUpdate({ step: currentStep, state, message: `Step ${currentStep}: Revalidating target & state integrity...` });
@@ -226,32 +270,66 @@
         }
       }
 
-      // --- STEP 4d: ISSUE ACTION CAPABILITY TOKEN ---
+      // --- STEP 4d: ISSUE ACTION CAPABILITY TOKEN (Strictly via PDP) ---
       let capabilityToken = null;
-      if (capabilityManager && capabilityManager.issueCapability) {
-        capabilityToken = capabilityManager.issueCapability({
-          actionType,
-          targetFingerprint: targetFp,
-          origin,
-          stateHash: currentStateHash,
-          purpose: 'agent_loop_step',
-          secretId: action.valueRef || null,
-          ttlMs: 15000
-        });
-        action.capabilityId = capabilityToken.capabilityId;
-        action.stateHash = currentStateHash;
+      if (capabilityManager) {
+        if (pdpDecision && pdpDecision.decision === 'ALLOW' && capabilityManager.issueFromDecision) {
+          capabilityToken = capabilityManager.issueFromDecision(pdpDecision, {
+            origin,
+            stateHash: currentStateHash,
+            humanApproved: Boolean(userApproved)
+          });
+        } else if (capabilityManager.issueCapability) {
+          capabilityToken = capabilityManager.issueCapability({
+            actionType: actionType.toUpperCase(),
+            targetFingerprint: targetFp,
+            origin,
+            stateHash: currentStateHash,
+            purpose: 'agent_loop_step',
+            secretId: action.valueRef || null,
+            humanApproved: Boolean(userApproved),
+            ttlMs: 15000
+          });
+        }
+        if (capabilityToken) {
+          action.capabilityId = capabilityToken.capabilityId;
+          action.stateHash = currentStateHash;
+        }
       }
 
-      // --- STEP 5: EXECUTION (Capability-Authorized) ---
+      // --- STEP 5: EXECUTION (Capability-Authorized via Effect Gate) ---
       state = STATES.EXECUTING;
       onStepUpdate({ step: currentStep, state, message: `Step ${currentStep}: Executing capability-authorized action...` });
 
-      const execResult = executeActionFn(action, targetElement, sensitiveElements, origin);
+      let execResult;
+      if (executeActionFn) {
+        execResult = executeActionFn(action, targetElement, sensitiveElements, origin);
+      } else if (effectGate && effectGate.executeProtectedEffect) {
+        execResult = effectGate.executeProtectedEffect({
+          effectId: actionType.toUpperCase(),
+          targetElement,
+          payload: {
+            value: action.value,
+            secretId: action.valueRef || (capabilityToken && capabilityToken.secretId),
+            x: action.x,
+            y: action.y
+          },
+          capabilityId: (capabilityToken && capabilityToken.capabilityId) || action.capabilityId,
+          origin,
+          stateHash: currentStateHash,
+          proposal: action
+        });
+      } else {
+        execResult = { ok: false, success: false, reason: 'No execution engine available' };
+      }
+
+      const isSuccess = execResult && (execResult.success === true || execResult.ok === true || (execResult.success !== false && execResult.ok !== false));
+
       recordEventFn('ACTION_EXECUTED', 'executor', {
         step: currentStep,
         action: actionType,
-        success: execResult.ok !== false && execResult.success !== false,
-        usedValueRef: !!execResult.secretUsed,
+        success: isSuccess,
+        usedValueRef: Boolean(execResult && (execResult.secretUsed || execResult.secretId)),
         capabilityId: (capabilityToken && capabilityToken.capabilityId) || null
       });
 
@@ -259,13 +337,12 @@
         step: currentStep,
         action: actionType,
         target: (action.target && (action.target.description || action.target.text)) || 'Resolved Target',
-        valueRef: execResult.secretId || action.valueRef,
+        valueRef: (execResult && (execResult.secretId || execResult.injectedSecretId)) || action.valueRef,
         durationMs: Math.round(performance.now() - stepT0),
-        status: (execResult.ok !== false && execResult.success !== false) ? 'EXECUTED' : 'FAILED',
-        error: execResult.reason || execResult.error
+        status: isSuccess ? 'EXECUTED' : 'FAILED',
+        error: execResult && (execResult.reason || execResult.error)
       });
 
-      const isSuccess = execResult && (execResult.success === true || execResult.ok === true || (execResult.success !== false && execResult.ok !== false));
       if (!isSuccess) {
         state = STATES.FAILED;
         const result = { ok: false, state, reason: `Execution failed: ${(execResult && (execResult.reason || execResult.error)) || 'Unknown execution error'}`, stepTraces, totalMs: Math.round(performance.now() - t0) };

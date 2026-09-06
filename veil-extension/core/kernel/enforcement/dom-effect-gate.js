@@ -155,10 +155,64 @@
     }
   }
 
+  /**
+   * Dispatches a mediated dropdown / option selection.
+   */
+  function dispatchSelect(selectElement, value, options = {}) {
+    if (!selectElement) return { success: false, reason: 'Select element not found' };
+
+    if (options.capabilityId && capabilityManager && capabilityManager.consumeCapability) {
+      const consumeRes = capabilityManager.consumeCapability(options.capabilityId, {
+        origin: options.origin || 'localhost',
+        actionType: 'SELECT',
+        stateHash: options.stateHash
+      });
+
+      if (!consumeRes.ok) {
+        return { success: false, reason: `DOM Select blocked: ${consumeRes.reason}` };
+      }
+    }
+
+    try {
+      if (typeof selectElement.focus === 'function') selectElement.focus();
+      selectElement.value = String(value || '');
+
+      const win = (selectElement.ownerDocument && selectElement.ownerDocument.defaultView) ||
+                  (typeof window !== 'undefined' ? window : globalThis);
+
+      if (win && win.Event) {
+        selectElement.dispatchEvent(new win.Event('change', { bubbles: true }));
+      }
+
+      return { success: true, capabilityConsumed: Boolean(options.capabilityId) };
+    } catch (err) {
+      return { success: false, reason: `Native select dispatch failed: ${err.message}` };
+    }
+  }
+
+  /**
+   * Dispatches a mediated viewport or element scroll.
+   */
+  function dispatchScroll(element, options = {}) {
+    try {
+      if (element && typeof element.scrollIntoView === 'function') {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else if (typeof window !== 'undefined' && window.scrollBy) {
+        window.scrollBy({ top: options.y || 200, left: options.x || 0, behavior: 'smooth' });
+      }
+
+      return { success: true, capabilityConsumed: false };
+    } catch (err) {
+      return { success: false, reason: `Scroll dispatch failed: ${err.message}` };
+    }
+  }
+
   const exportObj = {
     dispatchClick,
     dispatchType,
-    dispatchSubmit
+    dispatchSubmit,
+    dispatchSelect,
+    dispatchScroll
   };
 
   if (typeof module !== 'undefined' && module.exports) {

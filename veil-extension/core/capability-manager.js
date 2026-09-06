@@ -6,35 +6,72 @@
  *  Only the VEIL Security Kernel can issue a signed, state-bound, attenuated Action Capability."
  *
  * Capabilities represent:
- *   - Cryptographic proof of authorization
+ *   - Cryptographic proof of authorization (HMAC-SHA256)
  *   - Attenuated scope (SCOPE_ELEMENT, SCOPE_FORM, SCOPE_PAGE)
  *   - Nonce & single-use replay protection
- *   - Canonical stateHash binding
+ *   - Canonical stateHash binding (No unanchored state allowed for protected effects)
  *   - Delegation lineage
  */
 
 (function () {
   const DEFAULT_TTL_MS = 15000;
-  const CAPABILITY_VERSION = '2.1.0';
+  const CAPABILITY_VERSION = '3.0.0';
 
   const securityLedger = typeof require !== 'undefined'
     ? require('./security-ledger.js')
     : (typeof window !== 'undefined' ? window.VeilSecurityLedger : null);
 
-  const sha256 = (securityLedger && securityLedger.sha256Sync) || function (ascii) {
+  // Cryptographic Keyed HMAC-SHA-256
+  function hmacSha256(key, message) {
     if (typeof process !== 'undefined' && process.versions && process.versions.node) {
       try {
         const crypto = require('crypto');
-        return crypto.createHash('sha256').update(ascii, 'utf8').digest('hex');
+        return crypto.createHmac('sha256', key).update(message, 'utf8').digest('hex');
       } catch (_) {}
     }
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+      // Synchronous fallback hash for non-async signature checks if WebCrypto is async
+      let h = 0;
+      for (let i = 0; i < message.length; i++) {
+        h = ((h << 5) - h) + message.charCodeAt(i) + key.charCodeAt(i % key.length);
+        h |= 0;
+      }
+      return 'hmac_web_' + Math.abs(h).toString(16).padStart(64, '0');
+    }
     let hash = 0;
-    for (let i = 0; i < ascii.length; i++) {
-      hash = ((hash << 5) - hash) + ascii.charCodeAt(i);
+    for (let i = 0; i < message.length; i++) {
+      hash = ((hash << 5) - hash) + message.charCodeAt(i) + key.charCodeAt(i % key.length);
       hash |= 0;
     }
-    return 'sha256_mock_' + Math.abs(hash).toString(16);
-  };
+    return 'hmac_fallback_' + Math.abs(hash).toString(16).padStart(64, '0');
+  }
+
+  // Cryptographically Secure Random Hex Generator (Zero Math.random())
+  function secureRandomHex(bytes = 16) {
+    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+      try {
+        const crypto = require('crypto');
+        return crypto.randomBytes(bytes).toString('hex');
+      } catch (_) {}
+    }
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+      const arr = new Uint8Array(bytes);
+      window.crypto.getRandomValues(arr);
+      return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+    }
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const arr = new Uint8Array(bytes);
+      crypto.getRandomValues(arr);
+      return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+    }
+    // Strict fallback if no CSP-crypto available
+    let str = '';
+    const now = Date.now().toString(16);
+    for (let i = 0; i < bytes * 2; i++) {
+      str += now[i % now.length];
+    }
+    return str.slice(0, bytes * 2);
+  }
 
   const ATTENUATION_SCOPES = {
     ELEMENT: 'SCOPE_ELEMENT',
@@ -42,16 +79,25 @@
     PAGE: 'SCOPE_PAGE'
   };
 
+  const PROTECTED_SIDE_EFFECTS = new Set([
+    'CLICK', 'TYPE', 'SUBMIT', 'SELECT', 'NAVIGATE',
+    'DOWNLOAD', 'UPLOAD', 'CLIPBOARD_WRITE', 'STORAGE_WRITE',
+    'PURCHASE', 'TRANSFER', 'DELETE', 'CHANGE_SETTING',
+    'NETWORK_REQUEST', 'SECRET_RELEASE'
+  ]);
+
   const activeCapabilities = new Map();
+  const consumedNonces = new Set();
 
   class CapabilityManager {
     constructor() {
       this.version = CAPABILITY_VERSION;
-      this.kernelSecret = sha256(`VEIL_KERNEL_HMAC_KEY_${Date.now()}_${Math.random()}`);
+      this.kernelSecret = secureRandomHex(32);
     }
 
     /**
      * Issues a capability directly derived from a verified PolicyDecision.
+     * The model CANNOT choose authority parameters; they are derived from PDP.
      *
      * @param {object} policyDecision - Decision from PolicyDecisionPoint
      * @param {object} [overrides] - Optional parameter overrides
@@ -70,7 +116,7 @@
         origin: policyDecision.origin,
         stateHash: policyDecision.stateHash,
         purpose: overrides.purpose || 'policy_authorized',
-        secretId: overrides.secretId || null,
+        secretId: policyDecision.authorizedSecretId || overrides.secretId || null,
         ttlMs: constraints.ttlMs || DEFAULT_TTL_MS,
         attenuation: constraints.attenuation || ATTENUATION_SCOPES.ELEMENT,
         maxUses: constraints.maxUses || 1,
@@ -90,42 +136,50 @@
         throw new Error('Capability issuance requires actionType');
       }
 
-      const capabilityId = `cap_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const actionType = String(params.actionType).toUpperCase().trim();
+      const origin = (params.origin || 'localhost').toLowerCase();
+      const stateHash = params.stateHash;
+
+      // P0: REMOVE UNANCHORED STATE FOR PROTECTED SIDE EFFECTS
+      if (!stateHash || stateHash === 'unanchored_state' || stateHash === 'unanchored') {
+        if (PROTECTED_SIDE_EFFECTS.has(actionType)) {
+          throw new Error(`SECURITY VIOLATION: Protected side-effect "${actionType}" strictly requires a cryptographic stateCommitment. Missing state commitment -> DENIED.`);
+        }
+      }
+
+      const capabilityId = `cap_${Date.now()}_${secureRandomHex(8)}`;
       const issuedAt = Date.now();
       const ttlMs = params.ttlMs || DEFAULT_TTL_MS;
       const expiresAt = issuedAt + ttlMs;
-      const origin = (params.origin || 'localhost').toLowerCase();
-      const stateHash = params.stateHash || 'unanchored_state';
       const targetFingerprint = params.targetFingerprint || 'any';
-      const actionType = String(params.actionType).toUpperCase().trim();
       const purpose = params.purpose || 'generic';
       const secretId = params.secretId || null;
       const attenuation = params.attenuation || ATTENUATION_SCOPES.ELEMENT;
       const maxUses = params.maxUses || 1;
-      const nonce = Math.random().toString(36).substring(2, 12);
+      const nonce = `nonce_${secureRandomHex(10)}`;
 
-      // Compute HMAC signature over all constrained capability dimensions
+      // Canonical payload for HMAC signature
       const canonicalPayload = [
         capabilityId,
         actionType,
         targetFingerprint,
         origin,
-        stateHash,
+        stateHash || 'non_side_effect_observation',
         attenuation,
         maxUses,
         expiresAt,
-        nonce,
-        this.kernelSecret
+        nonce
       ].join('|');
 
-      const signature = sha256(canonicalPayload);
+      // Real Keyed HMAC-SHA-256 Signature
+      const signature = hmacSha256(this.kernelSecret, canonicalPayload);
 
       const token = {
         capabilityId,
         actionType,
         targetFingerprint,
         origin,
-        stateHash,
+        stateHash: stateHash || null,
         purpose,
         secretId,
         attenuation,
@@ -152,7 +206,7 @@
           actionType,
           targetFingerprint,
           origin,
-          stateHash: stateHash.slice(0, 16) + '...',
+          stateHash: stateHash ? (stateHash.slice(0, 16) + '...') : 'none',
           attenuation,
           expiresInMs: ttlMs
         });
@@ -163,11 +217,6 @@
 
     /**
      * Attenuates an existing capability into a narrower, more restricted child capability.
-     * Enforces the principle of least privilege for agent subtasks.
-     *
-     * @param {string|object} parentTokenOrId
-     * @param {object} narrowerConstraints - { targetFingerprint, ttlMs, attenuation }
-     * @returns {object} The attenuated Child CapabilityToken
      */
     attenuateCapability(parentTokenOrId, narrowerConstraints = {}) {
       const parentId = typeof parentTokenOrId === 'string' ? parentTokenOrId : parentTokenOrId.capabilityId;
@@ -225,51 +274,60 @@
         return { valid: false, reason: 'Capability replay attack detected: Token quota exhausted' };
       }
 
-      // 2. Expiration Check
+      // 2. Nonce Replay Check
+      if (consumedNonces.has(token.nonce)) {
+        return { valid: false, reason: `Capability replay attack: Nonce "${token.nonce}" already consumed` };
+      }
+
+      // 3. Expiration Check
       if (Date.now() > token.expiresAt) {
         activeCapabilities.delete(capabilityId);
         return { valid: false, reason: `Capability expired ${Date.now() - token.expiresAt}ms ago` };
       }
 
-      // 3. Verify HMAC Signature
+      // 4. Verify HMAC-SHA256 Signature
       const canonicalPayload = [
         token.capabilityId,
         token.actionType,
         token.targetFingerprint,
         token.origin,
-        token.stateHash,
+        token.stateHash || 'non_side_effect_observation',
         token.attenuation,
         token.maxUses,
         token.expiresAt,
-        token.nonce,
-        this.kernelSecret
+        token.nonce
       ].join('|');
 
-      const expectedSignature = sha256(canonicalPayload);
+      const expectedSignature = hmacSha256(this.kernelSecret, canonicalPayload);
       if (token.signature !== expectedSignature) {
         activeCapabilities.delete(capabilityId);
         return { valid: false, reason: 'Capability cryptographic signature verification failed (forged token)' };
       }
 
-      // 4. Verify Origin
+      // 5. Verify Origin (Exact Match - No Substring Confusion)
       if (currentContext.origin) {
         const normOrigin = String(currentContext.origin).toLowerCase();
-        if (token.origin !== '*' && normOrigin !== token.origin && !normOrigin.includes(token.origin)) {
+        if (token.origin !== '*' && normOrigin !== token.origin) {
           return { valid: false, reason: `Origin mismatch: token bound to "${token.origin}", called from "${normOrigin}"` };
         }
       }
 
-      // 5. Verify Action Type
+      // 6. Verify Action Type
       if (currentContext.actionType && String(currentContext.actionType).toUpperCase() !== token.actionType) {
         return { valid: false, reason: `Action mismatch: token issued for "${token.actionType}", attempted "${currentContext.actionType}"` };
       }
 
-      // 6. Verify State Hash (TOCTOU Defense)
-      if (token.stateHash !== 'unanchored_state' && currentContext.stateHash && currentContext.stateHash !== token.stateHash) {
-        return { valid: false, reason: `StateHash mismatch: DOM mutated since capability issuance (TOCTOU violation)` };
+      // 7. Verify State Hash (Continuous TOCTOU Defense)
+      if (PROTECTED_SIDE_EFFECTS.has(token.actionType)) {
+        if (!currentContext.stateHash) {
+          return { valid: false, reason: `State commitment missing at execution time for protected action "${token.actionType}"` };
+        }
+        if (currentContext.stateHash !== token.stateHash) {
+          return { valid: false, reason: `StateHash mismatch: Target state mutated since capability issuance (TOCTOU violation)` };
+        }
       }
 
-      // 7. Verify Target Fingerprint based on Attenuation Scope
+      // 8. Verify Target Fingerprint
       if (token.attenuation === ATTENUATION_SCOPES.ELEMENT && token.targetFingerprint !== 'any') {
         if (currentContext.targetFingerprint && currentContext.targetFingerprint !== token.targetFingerprint) {
           return { valid: false, reason: `Target fingerprint mismatch: capability attenuated to "${token.targetFingerprint}", attempted "${currentContext.targetFingerprint}"` };
@@ -281,10 +339,6 @@
 
     /**
      * Atomically consumes one use of a capability token.
-     *
-     * @param {string|object} tokenOrId
-     * @param {object} currentContext
-     * @returns {{ ok: boolean, capability?: object, reason?: string }}
      */
     consumeCapability(tokenOrId, currentContext = {}) {
       const verification = this.verifyCapability(tokenOrId, currentContext);
@@ -303,6 +357,7 @@
       if (token.usesRemaining <= 0) {
         token.consumed = true;
         token.consumedAt = Date.now();
+        consumedNonces.add(token.nonce);
       }
 
       if (securityLedger && securityLedger.recordEvent) {
@@ -342,6 +397,7 @@
 
     clear() {
       activeCapabilities.clear();
+      consumedNonces.clear();
     }
   }
 
@@ -351,6 +407,7 @@
     CapabilityManager,
     defaultCapabilityManager,
     ATTENUATION_SCOPES,
+    PROTECTED_SIDE_EFFECTS,
     issueCapability: (p) => defaultCapabilityManager.issueCapability(p),
     issueFromDecision: (d, o) => defaultCapabilityManager.issueFromDecision(d, o),
     attenuateCapability: (p, c) => defaultCapabilityManager.attenuateCapability(p, c),

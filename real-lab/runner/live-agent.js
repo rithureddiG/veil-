@@ -32,14 +32,44 @@ async function runLiveAgentSuite() {
 
   console.log(`  Step 1: Perception & Sanitization -> ${detections.length} PII scrubbed | Privacy Audit: ${audit.status}`);
 
-  // Step 2: Inject Card Number via Local Secret Vault
+  const capMgr = require('../../veil-extension/core/capability-manager');
+  const stateHasher = require('../../veil-extension/core/state-hasher');
+  const { stateHash } = stateHasher.computeStateHash(doc);
+
+  // Step 2: Inject Card Number via Local Secret Vault (Capability-Authorized)
   const cardInput = resolveTarget({ description: 'Credit Card Number' }, doc);
-  const injectResult = executeAction({ type: 'type', valueRef: 'LOCAL_SECRET_01' }, cardInput, sensitiveSet, 'localhost');
+  const cardFp = stateHasher.computeElementFingerprint(cardInput);
+  const capToken1 = capMgr.issueCapability({
+    actionType: 'TYPE',
+    targetFingerprint: cardFp,
+    origin: 'localhost',
+    stateHash,
+    secretId: 'LOCAL_SECRET_01'
+  });
+
+  const injectResult = executeAction({
+    type: 'type',
+    valueRef: 'LOCAL_SECRET_01',
+    capabilityId: capToken1.capabilityId,
+    stateHash
+  }, cardInput, sensitiveSet, 'localhost');
   console.log(`  Step 2: Local Vault Injection -> Success: ${injectResult.ok} | Secret: ${injectResult.secretId} | Value: Injected locally into DOM`);
 
-  // Step 3: Complete Purchase Click
+  // Step 3: Complete Purchase Click (Capability-Authorized)
   const btn = resolveTarget({ description: 'Complete Purchase' }, doc);
-  const clickResult = executeAction({ type: 'click' }, btn, sensitiveSet, 'localhost');
+  const btnFp = stateHasher.computeElementFingerprint(btn);
+  const capToken2 = capMgr.issueCapability({
+    actionType: 'CLICK',
+    targetFingerprint: btnFp,
+    origin: 'localhost',
+    stateHash
+  });
+
+  const clickResult = executeAction({
+    type: 'click',
+    capabilityId: capToken2.capabilityId,
+    stateHash
+  }, btn, sensitiveSet, 'localhost');
   console.log(`  Step 3: Submit Action Execution -> Success: ${clickResult.ok}`);
 
   console.log(`\n----------------------------------------------------------------------`);

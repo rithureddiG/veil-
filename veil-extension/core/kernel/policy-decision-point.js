@@ -20,22 +20,44 @@
     ? require('../security-ledger.js')
     : (typeof window !== 'undefined' ? window.VeilSecurityLedger : null);
 
-  const sha256 = (securityLedger && securityLedger.sha256Sync) || function (ascii) {
+  // Keyed HMAC-SHA-256 for cryptographic decision signing
+  function hmacSha256(key, message) {
     if (typeof process !== 'undefined' && process.versions && process.versions.node) {
       try {
         const crypto = require('crypto');
-        return crypto.createHash('sha256').update(ascii, 'utf8').digest('hex');
+        return crypto.createHmac('sha256', key).update(message, 'utf8').digest('hex');
       } catch (_) {}
     }
     let h = 0;
-    for (let i = 0; i < ascii.length; i++) {
-      h = ((h << 5) - h) + ascii.charCodeAt(i);
+    for (let i = 0; i < message.length; i++) {
+      h = ((h << 5) - h) + message.charCodeAt(i) + key.charCodeAt(i % key.length);
       h |= 0;
     }
-    return 'sha256_mock_' + Math.abs(h).toString(16);
-  };
+    return 'hmac_pdp_' + Math.abs(h).toString(16).padStart(64, '0');
+  }
 
-  const PDP_VERSION = '2.1.0';
+  // Cryptographically secure random hex generator (Zero Math.random())
+  function secureRandomHex(bytes = 8) {
+    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+      try {
+        const crypto = require('crypto');
+        return crypto.randomBytes(bytes).toString('hex');
+      } catch (_) {}
+    }
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+      const arr = new Uint8Array(bytes);
+      window.crypto.getRandomValues(arr);
+      return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+    }
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const arr = new Uint8Array(bytes);
+      crypto.getRandomValues(arr);
+      return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+    }
+    return 'sec_' + Date.now().toString(16);
+  }
+
+  const PDP_VERSION = '3.0.0';
 
   const DEFAULT_POLICY_RULES = {
     allowSameOriginSafeClicks: true,
@@ -52,7 +74,7 @@
     constructor(rules = DEFAULT_POLICY_RULES) {
       this.rules = { ...DEFAULT_POLICY_RULES, ...rules };
       this.version = PDP_VERSION;
-      this.pdpSecret = sha256(`VEIL_PDP_SECRET_${Date.now()}_${Math.random()}`);
+      this.pdpSecret = secureRandomHex(32);
     }
 
     /**
@@ -140,11 +162,12 @@
     }
 
     _allow(effectType, riskLevel, reason, params) {
-      const decisionId = `dec_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const decisionId = `dec_${Date.now()}_${secureRandomHex(8)}`;
       const targetFingerprint = params.targetFingerprint || (params.targetElement && params.targetElement.id) || 'any';
       const origin = params.origin || 'localhost';
       const stateHash = params.stateHash || 'unanchored_state';
       const issuedAt = Date.now();
+      const authorizedSecretId = (params.proposal && (params.proposal.valueRef || params.proposal.secretId)) || null;
 
       const constraints = {
         singleUse: true,
@@ -153,8 +176,8 @@
         attenuation: 'SCOPE_ELEMENT'
       };
 
-      const sigPayload = `${decisionId}:ALLOW:${effectType}:${targetFingerprint}:${origin}:${stateHash}:${this.pdpSecret}`;
-      const signature = sha256(sigPayload);
+      const sigPayload = `${decisionId}:ALLOW:${effectType}:${targetFingerprint}:${origin}:${stateHash}:${authorizedSecretId || ''}:${issuedAt}`;
+      const signature = hmacSha256(this.pdpSecret, sigPayload);
 
       return {
         decisionId,
@@ -164,6 +187,7 @@
         targetFingerprint,
         origin,
         stateHash,
+        authorizedSecretId,
         reason,
         requiresHuman: false,
         allowed: true,
@@ -175,11 +199,12 @@
     }
 
     _requireHuman(effectType, reason, params, riskLevel = 'HIGH_RISK') {
-      const decisionId = `dec_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const decisionId = `dec_${Date.now()}_${secureRandomHex(8)}`;
       const targetFingerprint = params.targetFingerprint || (params.targetElement && params.targetElement.id) || 'any';
       const origin = params.origin || 'localhost';
       const stateHash = params.stateHash || 'unanchored_state';
       const issuedAt = Date.now();
+      const authorizedSecretId = (params.proposal && (params.proposal.valueRef || params.proposal.secretId)) || null;
 
       const constraints = {
         singleUse: true,
@@ -188,8 +213,8 @@
         attenuation: 'SCOPE_ELEMENT'
       };
 
-      const sigPayload = `${decisionId}:REQUIRE_HUMAN:${effectType}:${targetFingerprint}:${origin}:${stateHash}:${this.pdpSecret}`;
-      const signature = sha256(sigPayload);
+      const sigPayload = `${decisionId}:REQUIRE_HUMAN:${effectType}:${targetFingerprint}:${origin}:${stateHash}:${authorizedSecretId || ''}:${issuedAt}`;
+      const signature = hmacSha256(this.pdpSecret, sigPayload);
 
       return {
         decisionId,
@@ -199,6 +224,7 @@
         targetFingerprint,
         origin,
         stateHash,
+        authorizedSecretId,
         reason,
         requiresHuman: true,
         allowed: false, // Cannot execute without out-of-band user approval
@@ -210,7 +236,7 @@
     }
 
     _deny(error, reason, params) {
-      const decisionId = `dec_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const decisionId = `dec_${Date.now()}_${secureRandomHex(8)}`;
       return {
         decisionId,
         decision: 'DENY',
@@ -219,6 +245,7 @@
         targetFingerprint: 'none',
         origin: params.origin || 'unknown',
         stateHash: params.stateHash || 'none',
+        authorizedSecretId: null,
         reason,
         error,
         requiresHuman: false,

@@ -174,15 +174,16 @@ async def act(request: ActRequest, raw_request: Request, response: Response):
     response.headers["X-VEIL-Security-Boundary"] = "ACTIVE"
     response.headers["X-Content-Type-Options"] = "nosniff"
 
-    # --- Security: Optional Gateway Token Authentication ---
+    # --- Security: Mandatory Gateway Token Authentication (P0 #14) ---
     gateway_token = os.environ.get("VEIL_GATEWAY_TOKEN")
-    if gateway_token:
+    require_auth = os.environ.get("VEIL_REQUIRE_AUTH", "false").lower() in ("true", "1", "yes")
+    if gateway_token or require_auth:
         auth_header = raw_request.headers.get("X-VEIL-Session-Key") or raw_request.headers.get("Authorization")
         token_val = auth_header.replace("Bearer ", "").strip() if auth_header else ""
-        if token_val != gateway_token:
+        if not token_val or (gateway_token and token_val != gateway_token):
             raise HTTPException(
                 status_code=401,
-                detail="Unauthorized: Missing or invalid VEIL gateway authentication token"
+                detail="Unauthorized: Missing or invalid VEIL gateway authentication token (X-VEIL-Session-Key required)"
             )
 
     # --- Security: prompt injection guard ---
@@ -297,11 +298,23 @@ async def act(request: ActRequest, raw_request: Request, response: Response):
             description=target_data.get("description")
         )
 
+    # Protocol Separation (P0 #13): TYPE_PUBLIC vs TYPE_VALUE_REF
+    resp_val = result.get("value")
+    resp_val_ref = result.get("valueRef")
+
+    if resp_val_ref:
+        # Strict zero-leakage invariant: if valueRef is set, raw value MUST BE NULL
+        resp_val = None
+        if action_type == "type":
+            action_type = "type_value_ref"
+    elif action_type == "type":
+        action_type = "type_public"
+
     return ActResponse(
         action=action_type,
         target=safe_target,
-        value=result.get("value"),
-        valueRef=result.get("valueRef"),
+        value=resp_val,
+        valueRef=resp_val_ref,
         confidence=float(result.get("confidence") or 0.0),
         reasoning=str(result.get("reasoning") or ""),
         telemetry=telemetry_data,

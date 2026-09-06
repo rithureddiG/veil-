@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AeroWings — Flight Booking Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="index.html" class="brand">
+      <div class="brand-icon" style="background: #bc8cff; color: #fff;">✈️</div>
+      <span>AeroWings Flights</span>
+    </a>
+    <div class="nav-links">
+      <span class="badge-tag badge-demo">TASK 2: TRAVEL</span>
+      <a href="index.html" class="nav-link">Portal</a>
+      <span class="nav-link">Currency: INR (₹)</span>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="page-header">
+      <h1 class="page-title">Flights from Hyderabad (HYD) to Delhi (DEL)</h1>
+      <p class="page-desc">Real-time domestic nonstop flight departures for today.</p>
+    </div>
+
+    <!-- Flight Search Filter Bar -->
+    <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px 24px; margin-bottom: 24px; display: flex; gap: 20px; align-items: center;">
+      <div style="flex: 1;">
+        <label class="form-label">From</label>
+        <input class="form-input" value="Hyderabad (HYD)" readonly style="background: var(--bg-card); cursor: default;">
+      </div>
+      <div style="font-size: 20px; color: var(--accent-blue); padding-top: 18px;">⇄</div>
+      <div style="flex: 1;">
+        <label class="form-label">To</label>
+        <input class="form-input" value="Delhi (DEL)" readonly style="background: var(--bg-card); cursor: default;">
+      </div>
+      <div style="flex: 1;">
+        <label class="form-label">Sort By</label>
+        <select class="form-input" id="sort-select" style="background: var(--bg-input);">
+          <option value="price" selected>Cheapest First (Recommended)</option>
+          <option value="duration">Fastest Duration</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Flight Results List -->
+    <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 32px;">
+      <!-- Flight 1: Akasa (Target match - Cheapest) -->
+      <div class="card" style="padding: 16px 24px; border-color: rgba(46, 160, 67, 0.4);" id="flight-qp-1102">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; gap: 24px; align-items: center;">
+            <div style="font-size: 28px;">🛫</div>
+            <div>
+              <div style="font-weight: 700; font-size: 16px;">Akasa Air QP-1102</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Non-stop • 2h 20m • Boeing 737 MAX</div>
+            </div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-weight: 800; font-size: 16px;">18:45 → 21:05</div>
+            <div style="font-size: 12px; color: var(--text-muted);">HYD - DEL</div>
+          </div>
+          <div style="display: flex; gap: 16px; align-items: center;">
+            <div>
+              <span class="badge-tag" style="background: rgba(46, 160, 67, 0.2); color: var(--accent-green); display: block; margin-bottom: 4px; text-align: center;">CHEAPEST</span>
+              <div class="price-tag" style="font-size: 22px;">₹4,199</div>
+            </div>
+            <button class="btn btn-success" id="select-cheapest-flight-btn" onclick="openPassengerModal('Akasa Air QP-1102', '₹4,199')">
+              Select Flight
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flight 2: IndiGo -->
+      <div class="card" style="padding: 16px 24px;" id="flight-6e-204">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; gap: 24px; align-items: center;">
+            <div style="font-size: 28px;">✈️</div>
+            <div>
+              <div style="font-weight: 700; font-size: 16px;">IndiGo 6E-204</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Non-stop • 2h 20m • Airbus A321neo</div>
+            </div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-weight: 800; font-size: 16px;">06:15 → 08:35</div>
+            <div style="font-size: 12px; color: var(--text-muted);">HYD - DEL</div>
+          </div>
+          <div style="display: flex; gap: 16px; align-items: center;">
+            <div class="price-tag" style="font-size: 22px; color: var(--text-primary);">₹4,499</div>
+            <button class="btn btn-secondary" onclick="openPassengerModal('IndiGo 6E-204', '₹4,499')">
+              Select Flight
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flight 3: Air India -->
+      <div class="card" style="padding: 16px 24px;" id="flight-ai-542">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; gap: 24px; align-items: center;">
+            <div style="font-size: 28px;">🛬</div>
+            <div>
+              <div style="font-weight: 700; font-size: 16px;">Air India AI-542</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Non-stop • 2h 25m • Boeing 787 Dreamliner</div>
+            </div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-weight: 800; font-size: 16px;">09:30 → 11:55</div>
+            <div style="font-size: 12px; color: var(--text-muted);">HYD - DEL</div>
+          </div>
+          <div style="display: flex; gap: 16px; align-items: center;">
+            <div class="price-tag" style="font-size: 22px; color: var(--text-primary);">₹5,899</div>
+            <button class="btn btn-secondary" onclick="openPassengerModal('Air India AI-542', '₹5,899')">
+              Select Flight
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Passenger Details Panel -->
+    <div id="passenger-modal" style="display: none; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 24px; max-width: 600px; margin: 0 auto; box-shadow: var(--shadow-lg);">
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Passenger Booking: <span id="booking-flight-title">Akasa Air QP-1102</span></h2>
+      <div style="margin-bottom: 16px; color: var(--accent-green); font-weight: 700; font-size: 18px;" id="booking-flight-price">Fare: ₹4,199</div>
+
+      <div class="privacy-callout">
+        <div class="privacy-callout-icon">🛡️</div>
+        <div>VEIL Privacy Protection: Passenger ID, phone, and email are verified locally. Zero plaintext identity leaked to AI.</div>
+      </div>
+
+      <form id="booking-form" onsubmit="handleBookingSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" for="traveler-name">Lead Passenger Name</label>
+          <input class="form-input" id="traveler-name" name="passenger_name" type="text" placeholder="e.g. Sreeshanth Reddy">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="traveler-email">Email Address</label>
+          <input class="form-input" id="traveler-email" name="email" type="email" placeholder="e.g. sreeshanth@example.com">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="traveler-id">Govt ID / Passport Number</label>
+          <input class="form-input form-input-masked" id="traveler-id" name="id_number" type="text" placeholder="Aadhaar or Passport Number">
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 10px;">
+          <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closePassengerModal()">Cancel</button>
+          <button type="submit" class="btn btn-success" style="flex: 2;" id="confirm-booking-btn">Confirm &amp; Issue Ticket (₹4,199)</button>
+        </div>
+      </form>
+
+      <div id="booking-success-banner" style="display: none; margin-top: 20px; padding: 16px; background: rgba(46, 160, 67, 0.15); border: 1px solid var(--accent-green); border-radius: var(--radius-sm); text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">🎟️</div>
+        <strong style="color: var(--accent-green); font-size: 16px;">Flight Ticket Issued!</strong>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">PNR: <strong>HYD-DEL-QP1102</strong> • Zero identity details leaked to remote models.</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function openPassengerModal(flight, price) {
+      document.getElementById('booking-flight-title').textContent = flight;
+      document.getElementById('booking-flight-price').textContent = 'Fare: ' + price;
+      document.getElementById('confirm-booking-btn').textContent = 'Confirm & Issue Ticket (' + price + ')';
+      const m = document.getElementById('passenger-modal');
+      m.style.display = 'block';
+      m.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function closePassengerModal() {
+      document.getElementById('passenger-modal').style.display = 'none';
+    }
+
+    function handleBookingSubmit(e) {
+      e.preventDefault();
+      document.getElementById('booking-success-banner').style.display = 'block';
+      document.getElementById('confirm-booking-btn').disabled = true;
+      document.getElementById('confirm-booking-btn').textContent = '✔ Ticket Confirmed';
+    }
+  </script>
+</body>
+</html>

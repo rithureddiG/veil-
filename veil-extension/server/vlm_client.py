@@ -20,7 +20,10 @@ from typing import Optional, Tuple
 
 import httpx
 
-ACTION_TYPES = {"click", "type", "scroll", "wait", "none", "finish"}
+ACTION_TYPES = {
+    "click", "type", "type_public", "type_value_ref",
+    "scroll", "wait", "none", "finish"
+}
 
 COMMIT_WORDS = {"buy", "purchase", "checkout", "complete", "order", "submit", "confirm", "pay", "place"}
 

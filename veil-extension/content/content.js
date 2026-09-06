@@ -91,10 +91,13 @@
 
     sendStats(latencyMs, barsDrawn);
 
-    // Sync with Live Inspector HUD if active
+    // Sync with Live Inspector HUD & Privacy Lens if active
     if (window.VeilInspector) {
       const ctx = buildSanitizedContext(document, lastDetections);
       window.VeilInspector.updateHUD(lastDetections, ctx);
+    }
+    if (window.VeilPrivacyLens && window.VeilPrivacyLens.isEnabled()) {
+      window.VeilPrivacyLens.renderLens();
     }
 
     maybeRunVisionFallback();
@@ -237,6 +240,7 @@
         scanAndRedact();
       } else {
         clearRedactions();
+        if (window.VeilPrivacyLens) window.VeilPrivacyLens.clearLens();
       }
       sendResponse({ ok: true, enabled });
       return true;

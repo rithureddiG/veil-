@@ -71,20 +71,27 @@
       let textToInject = (action.value != null ? String(action.value) : '').slice(0, 1000);
       let secretMetadata = null;
 
-      // Path A: Single-Use Capability or Local Secret Reference Resolution
-      if (action.capabilityId || action.valueRef) {
-        const fieldId = element.getAttribute('name') || element.getAttribute('id') || element.getAttribute('autocomplete') || '';
-        let vaultRes;
-        const refId = (capabilityRecord && capabilityRecord.secretId) || action.valueRef;
+      // Path A: Value Reference Resolution (MANDATORY CAPABILITY & SECRET AUTHORIZATION)
+      if (action.valueRef) {
+        if (!action.capabilityId || !capabilityRecord) {
+          return {
+            ok: false,
+            reason: 'SECURITY_VIOLATION: ValueRef resolution strictly requires an authorized Action Capability.'
+          };
+        }
 
+        const fieldId = element.getAttribute('name') || element.getAttribute('id') || element.getAttribute('autocomplete') || '';
+        const authorizedSecretId = capabilityRecord.secretId || action.valueRef;
+
+        let vaultRes;
         if (secretVault && secretVault.resolveSecret) {
-          vaultRes = secretVault.resolveSecret(refId, currentOrigin, fieldId);
+          vaultRes = secretVault.resolveSecret(authorizedSecretId, currentOrigin, fieldId);
         } else {
           vaultRes = { ok: false, reason: 'vault-unavailable' };
         }
 
         if (!vaultRes.ok) {
-          return { ok: false, reason: vaultRes.reason, secretId: refId || action.capabilityId };
+          return { ok: false, reason: vaultRes.reason, secretId: authorizedSecretId };
         }
 
         textToInject = vaultRes.value;
@@ -92,12 +99,19 @@
           secretUsed: true,
           secretId: vaultRes.secretId,
           label: vaultRes.label,
-          capabilityId: action.capabilityId || null
+          capabilityId: action.capabilityId
         };
       }
-      // Path B: Remote attempted raw typing into sensitive element without Capability / ValueRef -> BLOCK
+      // Path B: Authorized Plaintext Typing with Capability
+      else if (action.capabilityId) {
+        secretMetadata = {
+          secretUsed: false,
+          capabilityId: action.capabilityId
+        };
+      }
+      // Path C: Remote attempted raw typing into sensitive element without Capability -> BLOCK
       else if (isSensitive) {
-        return { ok: false, reason: 'blocked-sensitive-field' };
+        return { ok: false, reason: 'blocked-sensitive-field: Typing into sensitive field strictly requires Capability authorization' };
       }
 
       // Perform native DOM injection

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus Hardware — RTX GPUs & Components</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="index.html" class="brand">
+      <div class="brand-icon" style="background: #388bfd; color: #fff;">⚡</div>
+      <span>Nexus Hardware</span>
+    </a>
+    <div class="nav-links">
+      <span class="badge-tag badge-demo">TASK 1: SHOPPING</span>
+      <a href="index.html" class="nav-link">Portal</a>
+      <span class="nav-link" id="cart-counter">Cart: 0 items</span>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+      <div>
+        <h1 class="page-title">Next-Gen Graphics Cards (RTX 50-Series)</h1>
+        <p class="page-desc">High-performance gaming GPUs in stock at official manufacturer MSRP.</p>
+      </div>
+      <div style="background: var(--bg-card); padding: 8px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-size: 13px;">
+        Max Budget: <strong>₹80,000</strong>
+      </div>
+    </div>
+
+    <div class="grid-cards">
+      <!-- GPU 1: Target Match -->
+      <div class="card" id="card-rtx-5070" style="border-color: rgba(46, 160, 67, 0.4);">
+        <div class="card-image-box" style="background: #111a28; color: #58a6ff;">🎮</div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div class="card-title">GeForce RTX 5070 Gaming OC</div>
+          <span class="badge-tag" style="background: rgba(46, 160, 67, 0.2); color: var(--accent-green);">BEST VALUE</span>
+        </div>
+        <div class="card-meta">
+          12GB GDDR7 • Blackwell Architecture • DLSS 4 Support • PCIe 5.0 • 250W TDP
+        </div>
+        <div class="card-price-row">
+          <div>
+            <div class="price-tag" id="price-rtx-5070">₹74,999</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Inclusive of all taxes</div>
+          </div>
+          <button class="btn btn-success buy-btn" id="buy-rtx-5070" onclick="openCheckout('GeForce RTX 5070', '₹74,999')">
+            Buy Now
+          </button>
+        </div>
+      </div>
+
+      <!-- GPU 2: Over Budget -->
+      <div class="card" id="card-rtx-5080">
+        <div class="card-image-box">🚀</div>
+        <div class="card-title">GeForce RTX 5080 Trinity Edition</div>
+        <div class="card-meta">
+          16GB GDDR7 • Enthusiast Ultra Tier • 4K 144Hz Native • 360W TDP
+        </div>
+        <div class="card-price-row">
+          <div>
+            <div class="price-tag" style="color: var(--text-primary);">₹1,19,999</div>
+            <div style="font-size: 11px; color: var(--accent-red);">Exceeds ₹80k budget</div>
+          </div>
+          <button class="btn btn-secondary buy-btn" id="buy-rtx-5080" onclick="openCheckout('GeForce RTX 5080', '₹1,19,999')">
+            Buy Now
+          </button>
+        </div>
+      </div>
+
+      <!-- GPU 3: Older Tier -->
+      <div class="card" id="card-rtx-4060">
+        <div class="card-image-box">⚡</div>
+        <div class="card-title">GeForce RTX 4060 Twin Edge</div>
+        <div class="card-meta">
+          8GB GDDR6 • Budget 1080p Gaming • DLSS 3 Frame Gen • 115W TDP
+        </div>
+        <div class="card-price-row">
+          <div>
+            <div class="price-tag" style="color: var(--text-secondary);">₹31,999</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Previous Generation</div>
+          </div>
+          <button class="btn btn-secondary buy-btn" id="buy-rtx-4060" onclick="openCheckout('GeForce RTX 4060', '₹31,999')">
+            Buy Now
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Checkout Modal / Panel (Hidden until trigger) -->
+    <div id="checkout-modal" style="display: none; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 24px; max-width: 600px; margin: 30px auto; box-shadow: var(--shadow-lg);">
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Order Checkout: <span id="checkout-item-title">RTX 5070</span></h2>
+      <div style="margin-bottom: 20px; color: var(--accent-green); font-weight: 700; font-size: 18px;" id="checkout-item-price">Total: ₹74,999</div>
+
+      <div class="privacy-callout">
+        <div class="privacy-callout-icon">🛡️</div>
+        <div>VEIL Protection Active: Payment credentials entered here are populated via on-device <code>ValueRef</code> tokens.</div>
+      </div>
+
+      <form id="checkout-form" onsubmit="handleOrderSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" for="fullname-input">Full Customer Name</label>
+          <input class="form-input" id="fullname-input" name="fullname" type="text" placeholder="e.g. Sreeshanth Reddy">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="address-input">Shipping Street Address</label>
+          <input class="form-input" id="address-input" name="address" type="text" placeholder="e.g. Flat 402, Cyber Heights, Hyderabad">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label class="form-label" for="cc-field">Credit Card Number</label>
+            <input class="form-input form-input-masked" id="cc-field" name="card_number" type="text" placeholder="•••• •••• •••• ••••" autocomplete="cc-number">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cvv-field">CVV</label>
+            <input class="form-input form-input-masked" id="cvv-field" name="cvv" type="password" placeholder="•••" maxlength="4" autocomplete="cc-csc">
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 10px;">
+          <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeCheckout()">Cancel</button>
+          <button type="submit" class="btn btn-success" style="flex: 2;" id="place-order-btn">Authorize &amp; Pay ₹74,999</button>
+        </div>
+      </form>
+
+      <div id="order-success-banner" style="display: none; margin-top: 20px; padding: 16px; background: rgba(46, 160, 67, 0.15); border: 1px solid var(--accent-green); border-radius: var(--radius-sm); text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">🎉</div>
+        <strong style="color: var(--accent-green); font-size: 16px;">Order Confirmed Successfully!</strong>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Zero plain-text credit card bytes were leaked to external models.</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function openCheckout(title, price) {
+      document.getElementById('checkout-item-title').textContent = title;
+      document.getElementById('checkout-item-price').textContent = 'Total: ' + price;
+      document.getElementById('place-order-btn').textContent = 'Authorize & Pay ' + price;
+      const modal = document.getElementById('checkout-modal');
+      modal.style.display = 'block';
+      modal.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function closeCheckout() {
+      document.getElementById('checkout-modal').style.display = 'none';
+    }
+
+    function handleOrderSubmit(e) {
+      e.preventDefault();
+      document.getElementById('order-success-banner').style.display = 'block';
+      document.getElementById('place-order-btn').disabled = true;
+      document.getElementById('place-order-btn').textContent = '✔ Verified & Paid';
+    }
+  </script>
+</body>
+</html>

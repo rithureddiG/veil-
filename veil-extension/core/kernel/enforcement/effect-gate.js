@@ -51,6 +51,26 @@
     ? require('./secret-release-gate.js')
     : (typeof window !== 'undefined' ? window.VeilSecretReleaseGate : null);
 
+  function secureRandomHex(bytes = 8) {
+    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+      try {
+        const crypto = require('crypto');
+        return crypto.randomBytes(bytes).toString('hex');
+      } catch (_) {}
+    }
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+      const arr = new Uint8Array(bytes);
+      window.crypto.getRandomValues(arr);
+      return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+    }
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const arr = new Uint8Array(bytes);
+      crypto.getRandomValues(arr);
+      return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+    }
+    return 'sec_' + Date.now().toString(16);
+  }
+
   /**
    * Universal Execution Gateway for all protected effects.
    *
@@ -95,7 +115,7 @@
         activeCapabilities: capabilityId ? [capabilityId] : []
       });
 
-      if (!decision.allowed) {
+      if (!decision.allowed && !decision.requiresHuman) {
         return {
           success: false,
           reason: `Policy Decision Denied: ${decision.reason || 'Unauthorized effect'}`,
@@ -104,7 +124,7 @@
       }
     }
 
-    // 3. Capability Verification
+    // 3. Capability Verification — Zero Unmediated Protected Effects (Invariant I1)
     let capabilityRecord = null;
     if (capabilityId && capabilityManager && capabilityManager.verifyCapability) {
       const capCheck = capabilityManager.verifyCapability(capabilityId, {
@@ -121,10 +141,20 @@
         };
       }
       capabilityRecord = capCheck.capability;
-    } else if (effectDesc.mandatoryHumanAuth || effectDesc.reversibility === 'IRREVERSIBLE') {
+    } else {
       return {
         success: false,
         reason: `Irreversible effect "${effectDesc.id}" strictly mandates an authorized CapabilityToken.`,
+        effect: effectDesc
+      };
+    }
+
+    // 3b. Cryptographic State-Binding Check (Invariant I3)
+    const effectiveStateHash = stateHash || (capabilityRecord && capabilityRecord.stateHash);
+    if (!effectiveStateHash || effectiveStateHash === 'unanchored' || effectiveStateHash === 'unanchored_state') {
+      return {
+        success: false,
+        reason: `Protected effect "${effectDesc.id}" requires a cryptographic state commitment (stateHash). Missing state commitment fails closed.`,
         effect: effectDesc
       };
     }
@@ -135,7 +165,7 @@
     switch (effectDesc.id) {
       case 'CLICK':
         if (domGate && domGate.dispatchClick) {
-          gateResult = domGate.dispatchClick(targetElement, { capabilityId, origin, stateHash });
+          gateResult = domGate.dispatchClick(targetElement, { capabilityId, origin, stateHash: effectiveStateHash });
         }
         break;
 
@@ -146,16 +176,28 @@
             targetElement,
             origin,
             capabilityId,
-            stateHash
+            stateHash: effectiveStateHash
           });
         } else if (domGate && domGate.dispatchType) {
-          gateResult = domGate.dispatchType(targetElement, payload.value || '', { capabilityId, origin, stateHash });
+          gateResult = domGate.dispatchType(targetElement, payload.value || '', { capabilityId, origin, stateHash: effectiveStateHash });
         }
         break;
 
       case 'SUBMIT':
         if (domGate && domGate.dispatchSubmit) {
-          gateResult = domGate.dispatchSubmit(targetElement, { capabilityId, origin, stateHash });
+          gateResult = domGate.dispatchSubmit(targetElement, { capabilityId, origin, stateHash: effectiveStateHash });
+        }
+        break;
+
+      case 'SELECT':
+        if (domGate && domGate.dispatchSelect) {
+          gateResult = domGate.dispatchSelect(targetElement, payload.value || '', { capabilityId, origin, stateHash: effectiveStateHash });
+        }
+        break;
+
+      case 'SCROLL':
+        if (domGate && domGate.dispatchScroll) {
+          gateResult = domGate.dispatchScroll(targetElement, { x: payload.x, y: payload.y });
         }
         break;
 
@@ -204,25 +246,58 @@
             targetElement,
             origin,
             capabilityId,
-            stateHash
+            stateHash: effectiveStateHash
           });
         }
         break;
 
+      case 'PURCHASE':
+      case 'TRANSFER':
+      case 'DELETE':
+      case 'CHANGE_SETTING':
+        if (!capabilityRecord || !capabilityRecord.humanApproved) {
+          return {
+            success: false,
+            reason: `Irreversible side effect "${effectDesc.id}" requires verified Out-of-Band Human Approval.`,
+            effect: effectDesc
+          };
+        }
+        if (targetElement && domGate && domGate.dispatchClick) {
+          gateResult = domGate.dispatchClick(targetElement, { capabilityId, origin, stateHash: effectiveStateHash });
+        } else {
+          gateResult = { success: true, reason: `Critical effect "${effectDesc.id}" authorized and executed under kernel mediation.` };
+        }
+        break;
+
+      case 'DOWNLOAD':
+      case 'UPLOAD':
+        if (!capabilityRecord || !capabilityRecord.humanApproved) {
+          return {
+            success: false,
+            reason: `Irreversible side effect "${effectDesc.id}" requires verified Out-of-Band Human Approval.`,
+            effect: effectDesc
+          };
+        }
+        gateResult = { success: true, reason: `Effect "${effectDesc.id}" authorized and executed under kernel mediation.` };
+        break;
+
       default:
-        // Default safe dispatch for interaction primitives
-        gateResult = { success: true, reason: 'Dispatched through generic verified gate' };
+        // Invariant C1 & P0 #11: Fail closed on any unhandled primitive
+        gateResult = {
+          success: false,
+          reason: `DENY: Unimplemented protected effect primitive "${effectDesc.id}". Untrusted execution fails closed.`
+        };
     }
 
-    // 5. Generate Action Receipt on success
+    // 5. Generate Action Receipt on success with Cryptographic Randomness (P0 #4)
     let receipt = null;
     if (gateResult.success) {
       receipt = {
-        receiptId: `rcpt_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+        receiptId: `rcpt_${Date.now()}_${secureRandomHex(8)}`,
         effectId: effectDesc.id,
         origin,
         capabilityId: capabilityId || null,
-        stateHash: stateHash || 'unanchored',
+        stateHash: effectiveStateHash,
         timestamp: Date.now(),
         isoTime: new Date().toISOString(),
         status: 'SUCCESS'

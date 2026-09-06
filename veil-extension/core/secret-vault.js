@@ -12,92 +12,25 @@
  */
 
 (function () {
-  // Built-in demonstration fixture seeds (isolated from production credential storage)
-  const DEMO_FIXTURE_SEEDS = [
-    {
-      secretId: 'LOCAL_SECRET_01',
-      purpose: 'credit_card',
-      label: 'Demo Visa Card',
-      type: 'credit_card',
-      maskedDisplay: '•••• •••• •••• 1111',
-      allowedOrigins: ['localhost', '127.0.0.1'],
-      allowedFields: ['card', 'card_number', 'cc-number', 'credit_card'],
-      value: '4111 1111 1111 1111'
-    },
-    {
-      secretId: 'LOCAL_SECRET_02',
-      purpose: 'cvv',
-      label: 'Demo CVV Code',
-      type: 'cvv',
-      maskedDisplay: '•••',
-      allowedOrigins: ['localhost', '127.0.0.1'],
-      allowedFields: ['cvv', 'cvc', 'cc-csc', 'security_code'],
-      value: '421'
-    },
-    {
-      secretId: 'LOCAL_SECRET_03',
-      purpose: 'shipping_address',
-      label: 'Primary Shipping Address',
-      type: 'address',
-      maskedDisplay: 'Flat 402, Cyber Heights, Hyderabad...',
-      allowedOrigins: ['localhost', '127.0.0.1'],
-      allowedFields: ['address', 'street-address', 'shipping_address', 'street'],
-      value: 'Flat 402, Cyber Heights, Hitec City, Hyderabad, 500081'
-    },
-    {
-      secretId: 'LOCAL_SECRET_04',
-      purpose: 'contact_phone',
-      label: 'Primary Contact Phone',
-      type: 'phone',
-      maskedDisplay: '+91 98765-•••••',
-      allowedOrigins: ['localhost', '127.0.0.1'],
-      allowedFields: ['phone', 'tel', 'mobile', 'notes', 'contact'],
-      value: '+91 98765-43210'
-    },
-    {
-      secretId: 'LOCAL_SECRET_05',
-      purpose: 'user_name',
-      label: 'Primary User Name',
-      type: 'name',
-      maskedDisplay: 'Sreeshanth R••••',
-      allowedOrigins: ['localhost', '127.0.0.1'],
-      allowedFields: ['name', 'fullname', 'patient_name', 'account_holder'],
-      value: 'Sreeshanth Reddy'
-    },
-    {
-      secretId: 'LOCAL_SECRET_06',
-      purpose: 'user_email',
-      label: 'Primary Email Address',
-      type: 'email',
-      maskedDisplay: 'sreeshanth@••••••••••',
-      allowedOrigins: ['localhost', '127.0.0.1'],
-      allowedFields: ['email', 'email_address', 'username'],
-      value: 'sreeshanth@example.com'
-    },
-    {
-      secretId: 'LOCAL_SECRET_PASS',
-      purpose: 'login_password',
-      label: 'User Master Password',
-      type: 'password',
-      maskedDisplay: '••••••••••••',
-      allowedOrigins: ['localhost', '127.0.0.1'],
-      allowedFields: ['password', 'pass', 'auth', 'pin', 'secret'],
-      value: 'SuperSecretPass#99'
-    },
-    {
-      secretId: 'LOCAL_USER_NAME',
-      purpose: 'citizen_name',
-      label: 'Authorized Citizen Name',
-      type: 'name',
-      maskedDisplay: 'Sreeshanth R••••',
-      allowedOrigins: ['localhost', '127.0.0.1'],
-      allowedFields: ['name', 'fullname', 'name-input', 'username'],
-      value: 'Sreeshanth Reddy'
+  function loadFixtureSeeds() {
+    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const fixturePath = path.join(__dirname, '../fixtures/secrets.fixture.json');
+        if (fs.existsSync(fixturePath)) {
+          return JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
+        }
+      } catch (_) {}
     }
-  ];
+    return [];
+  }
 
-  const DEFAULT_VAULT = DEMO_FIXTURE_SEEDS;
-  let inMemoryVault = [...DEMO_FIXTURE_SEEDS];
+  // Pure zero-trust: in production, vault starts EMPTY. Test fixtures loaded only when test flag/environment active.
+  const isTestEnv = (typeof process !== 'undefined' && process.env && (process.env.VEIL_TEST_FIXTURES === 'true' || process.env.NODE_ENV === 'test' || !process.env.NODE_ENV)) ||
+                    (typeof window !== 'undefined' && (window.__VEIL_TEST_FIXTURES__ === true || window.VEIL_TEST_FIXTURES === true));
+
+  let inMemoryVault = isTestEnv ? loadFixtureSeeds() : [];
 
   // Active single-use capabilities registry
   // Key: capabilityId -> Capability Object
@@ -309,14 +242,24 @@
     }
   }
 
+  function clearVault() {
+    inMemoryVault = [];
+  }
+
+  function loadTestFixtures() {
+    inMemoryVault = loadFixtureSeeds();
+    return inMemoryVault;
+  }
+
   const secretVaultExport = {
     getSecretMetadata,
     resolveSecret,
     setSecret,
+    clearVault,
+    loadTestFixtures,
     issueCapability,
     consumeCapability,
-    DEFAULT_VAULT: DEMO_FIXTURE_SEEDS,
-    DEMO_FIXTURE_SEEDS
+    DEFAULT_VAULT: inMemoryVault
   };
 
   if (typeof module !== 'undefined' && module.exports) {

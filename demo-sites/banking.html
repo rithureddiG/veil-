@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Premier — NetBanking Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="index.html" class="brand">
+      <div class="brand-icon" style="background: #2ea043; color: #fff;">🏦</div>
+      <span>Apex Premier Bank</span>
+    </a>
+    <div class="nav-links">
+      <span class="badge-tag badge-demo">TASK 4: BANKING SIMULATION</span>
+      <a href="index.html" class="nav-link">Portal</a>
+      <span class="nav-link" style="color: var(--accent-green);">● Secure Session</span>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+      <div>
+        <h1 class="page-title">Personal NetBanking Dashboard</h1>
+        <p class="page-desc">Real-time savings account balances, statements, and transaction limits.</p>
+      </div>
+      <div style="text-align: right;">
+        <span style="font-size: 12px; color: var(--text-muted);">Account Holder</span>
+        <div style="font-weight: 700; font-size: 14px;" id="account-holder">Sreeshanth Reddy</div>
+      </div>
+    </div>
+
+    <!-- Account Balance Card -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 28px;">
+      <div class="card" style="background: linear-gradient(135deg, #161b22, #1f293d); border-color: rgba(56, 139, 253, 0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div>
+            <span class="badge-tag" style="background: rgba(56, 139, 253, 0.2); color: var(--accent-blue);">PRIMARY SAVINGS</span>
+            <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); margin-top: 6px;" id="account-number">
+              A/C No: •••• •••• 8821
+            </div>
+          </div>
+          <div style="font-size: 28px;">💳</div>
+        </div>
+
+        <div style="margin: 16px 0;">
+          <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary);">Available Balance</div>
+          <div class="price-tag" style="font-size: 36px; color: #ffffff; font-family: var(--font-mono); margin-top: 4px;" id="account-balance">
+            ₹1,42,500.00
+          </div>
+        </div>
+
+        <div class="privacy-callout" style="margin-bottom: 0;">
+          <div class="privacy-callout-icon">🛡️</div>
+          <div style="font-size: 11px;">
+            <strong>VEIL Model Redaction:</strong> When an AI agent inspects this page, the model receives <code>VALUE_REF[financial.balance]</code>. The raw figure <code>1,42,500.00</code> is never exposed.
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Transfer / Action Widget -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom: 14px;">Quick Actions</div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button class="btn btn-secondary" id="check-balance-btn" onclick="highlightBalance()">
+            🔍 Inquire Account Balance
+          </button>
+          <button class="btn btn-secondary" id="download-statement-btn" onclick="alert('Statement downloaded locally.')">
+            📄 Download Statement
+          </button>
+          <button class="btn btn-primary" id="transfer-funds-btn" onclick="alert('Fund transfer interface requires privileged out-of-band confirmation.')">
+            💸 Transfer Funds
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Transactions Ledger -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom: 16px;">Recent Transactions (Last 30 Days)</div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+          <div>
+            <div style="font-weight: 600;">Nature Fresh Organic Supermarket</div>
+            <div style="font-size: 11px; color: var(--text-muted);">POS Debit • Ref: TXN-94812</div>
+          </div>
+          <div style="color: var(--accent-red); font-weight: 700; font-family: var(--font-mono);">-₹3,240.00</div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+          <div>
+            <div style="font-weight: 600;">Monthly Executive Salary Credit</div>
+            <div style="font-size: 11px; color: var(--text-muted);">NEFT Credit • Ref: SAL-08421</div>
+          </div>
+          <div style="color: var(--accent-green); font-weight: 700; font-family: var(--font-mono);">+₹95,000.00</div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+          <div>
+            <div style="font-weight: 600;">Southern Power Distribution Electricity</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Bill Payment • Ref: ELEC-3301</div>
+          </div>
+          <div style="color: var(--accent-red); font-weight: 700; font-family: var(--font-mono);">-₹1,850.00</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function highlightBalance() {
+      const el = document.getElementById('account-balance');
+      el.style.transition = 'all 0.3s';
+      el.style.color = '#58a6ff';
+      setTimeout(() => { el.style.color = '#ffffff'; }, 1000);
+    }
+  </script>
+</body>
+</html>

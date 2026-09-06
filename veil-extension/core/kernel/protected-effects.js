@@ -26,7 +26,7 @@
   };
 
   /**
-   * Complete inventory of all 14 protected side effects recognized by the VEIL Kernel.
+   * Complete inventory of all 16 protected side effects recognized by the VEIL Kernel.
    */
   const PROTECTED_EFFECTS = {
     CLICK: {
@@ -40,7 +40,7 @@
     TYPE: {
       id: 'TYPE',
       category: EFFECT_CATEGORIES.INTERACTION,
-      reversibility: REVERSIBLE = REVERSIBILITY.REVERSIBLE,
+      reversibility: REVERSIBILITY.REVERSIBLE,
       requiresTarget: true,
       defaultRisk: 'SAFE',
       description: 'Injecting text input into a DOM form field'

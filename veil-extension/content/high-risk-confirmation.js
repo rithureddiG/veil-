@@ -81,20 +81,10 @@
       });
     }
 
-    // 3. Fallback for standalone window environments (fails closed by default)
-    // NEVER inject innerHTML into page DOM
-    if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
-      try {
-        const actionType = (details.action && details.action.type) || 'ACTION';
-        const targetDesc = (details.action && details.action.target && (details.action.target.description || details.action.target.text)) || 'Target';
-        const msg = `[VEIL SECURITY KERNEL - PRIVILEGED AUTH]\n\nAuthorize autonomous agent to execute ${actionType} on "${targetDesc}" at ${details.origin || 'this origin'}?`;
-        return Promise.resolve(window.confirm(msg));
-      } catch (_) {
-        return Promise.resolve(false);
-      }
-    }
-
-    // 4. Default: Strict Fail-Closed
+    // 3. Strict Fail-Closed Security Boundary:
+    // Invariant I2: NEVER render in-page dialogs or use window.confirm() fallbacks.
+    // Untrusted page DOM contexts cannot provide trustworthy authorization.
+    // If no privileged extension runtime or out-of-band handler is available -> Fail Closed.
     return Promise.resolve(false);
   }
 
