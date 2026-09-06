@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VeilSecurityReceipt",
+  "type": "object",
+  "required": [
+    "receiptType",
+    "version",
+    "genesisHash",
+    "headHash",
+    "sessionRoot",
+    "eventCount",
+    "checkpoints",
+    "chain",
+    "exportedAt"
+  ],
+  "properties": {
+    "receiptType": { "type": "string", "enum": ["VEIL_SECURITY_RECEIPT"] },
+    "version": { "type": "string" },
+    "genesisHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "headHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "sessionRoot": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "eventCount": { "type": "integer", "minimum": 0 },
+    "checkpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["checkpointIndex", "eventIndex", "headHash", "checkpointHash", "timestamp"],
+        "properties": {
+          "checkpointIndex": { "type": "integer" },
+          "eventIndex": { "type": "integer" },
+          "headHash": { "type": "string" },
+          "checkpointHash": { "type": "string" },
+          "timestamp": { "type": "integer" }
+        }
+      }
+    },
+    "chain": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "eventIndex", "timestamp", "type", "stage", "payloadHash", "prevHash", "hash"],
+        "properties": {
+          "id": { "type": "string" },
+          "eventIndex": { "type": "integer" },
+          "timestamp": { "type": "integer" },
+          "type": { "type": "string" },
+          "stage": { "type": "string" },
+          "detail": { "type": "object" },
+          "payloadHash": { "type": "string" },
+          "prevHash": { "type": "string" },
+          "hash": { "type": "string" }
+        }
+      }
+    },
+    "exportedAt": { "type": "integer" }
+  }
+}
