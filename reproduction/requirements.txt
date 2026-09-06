@@ -1,0 +1,4 @@
+# VEIL v2.5 Scientific Reproduction Requirements
+# Note: VEIL verification scripts require ONLY the standard Python 3.10+ library.
+# Zero third-party packages required for pure cryptographic reproduction!
+# Standard library used: hashlib, hmac, json, sys, os, time, argparse

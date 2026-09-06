@@ -1,0 +1,91 @@
+{
+  "secret": "VEIL_REPRODUCTION_KEY_1234567890",
+  "validReceipt": {
+    "receiptType": "VEIL_SECURITY_RECEIPT",
+    "receiptId": "rec_golden_001",
+    "genesisHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "sessionRoot": "6c4578142ceba5dd831201552efc464eef6ff236e7a27509d3daef04c0ec1858",
+    "chain": [
+      {
+        "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "payload": {
+          "type": "PROPOSAL",
+          "intent": "checkout",
+          "actionType": "EFFECT_INTERACT_CLICK"
+        },
+        "eventHash": "bfaeaeb040ee2bfd1bead303d8a7ff2215c0e0b3e6ffb564e9e0fa95a7304f58"
+      },
+      {
+        "prevHash": "bfaeaeb040ee2bfd1bead303d8a7ff2215c0e0b3e6ffb564e9e0fa95a7304f58",
+        "payload": {
+          "type": "CAPABILITY_ISSUED",
+          "capabilityId": "cap_gold_01",
+          "nonce": "nonce_gold_01"
+        },
+        "eventHash": "6c4578142ceba5dd831201552efc464eef6ff236e7a27509d3daef04c0ec1858"
+      }
+    ]
+  },
+  "tamperedReceipt": {
+    "receiptType": "VEIL_SECURITY_RECEIPT",
+    "receiptId": "rec_golden_tampered",
+    "genesisHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "sessionRoot": "6c4578142ceba5dd831201552efc464eef6ff236e7a27509d3daef04c0ec1858",
+    "chain": [
+      {
+        "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "payload": {
+          "type": "PROPOSAL",
+          "intent": "STEAL_USER_DATA_TAMPERED",
+          "actionType": "EFFECT_INTERACT_CLICK"
+        },
+        "eventHash": "bfaeaeb040ee2bfd1bead303d8a7ff2215c0e0b3e6ffb564e9e0fa95a7304f58"
+      }
+    ]
+  },
+  "validCapability": {
+    "capabilityId": "cap_gold_101",
+    "actionType": "EFFECT_INTERACT_CLICK",
+    "stateHash": "0x_dom_state_commit_clean_9988",
+    "nonce": "nonce_gold_101",
+    "createdAt": 1725619200000,
+    "expiresAt": 1925619200000,
+    "signature": "3c7bfe83cff501ad982755e0930a08e1694f4a3ea30df4598285514f762699f8"
+  },
+  "validPcaBundle": {
+    "pcaId": "pca_gold_201",
+    "schema": "veil.pca/v1",
+    "action": {
+      "type": "CLICK",
+      "target": "#order-submit",
+      "parameters": { "amount": 499 }
+    },
+    "preProof": {
+      "pcaId": "pca_gold_201",
+      "nonce": "nonce_pca_201",
+      "preStateHash": "0x_pre_state_hash_abc",
+      "actionDigest": "2b3117fe28e7bbd743a3e66014caec6919dfae981bc88cfd3d379058b73f8d68",
+      "authorizationSignature": "c005fbc294c6f50567f85806c9a3bf8bf71bc30983226db2e9644fcfda98ee73"
+    },
+    "postProof": {
+      "pcaId": "pca_gold_201",
+      "preStateHash": "0x_pre_state_hash_abc",
+      "postStateHash": "0x_post_state_hash_xyz",
+      "success": true,
+      "receiptId": "rec_pca_201",
+      "completionSignature": "5b95a8f2762ebbbca7c86720e50529d1cba103328ebbc186bfcb91ce07842600"
+    }
+  },
+  "policyVectors": [
+    {
+      "rule": { "action": "EFFECT_INTERACT_CLICK", "allow": true, "maxRisk": "HIGH" },
+      "proposal": { "actionType": "EFFECT_INTERACT_CLICK", "risk": "MEDIUM", "intent": "view_item" },
+      "expectedVerdict": "ALLOW"
+    },
+    {
+      "rule": { "action": "EFFECT_SECRET_RELEASE", "allow": false },
+      "proposal": { "actionType": "EFFECT_SECRET_RELEASE", "risk": "CRITICAL", "intent": "read_password" },
+      "expectedVerdict": "BLOCK"
+    }
+  ]
+}
