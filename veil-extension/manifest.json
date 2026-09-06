@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "VEIL — privacy firewall for browser agents",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "See locally. Reason remotely. Reveal nothing sensitive. On-device visual perception & privacy firewall for browser agents.",
   "permissions": ["activeTab", "tabs", "storage", "sidePanel"],
   "side_panel": {

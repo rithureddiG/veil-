@@ -1,14 +1,19 @@
 {
   "name": "veil",
-  "version": "3.0.0",
+  "version": "3.0.0-sih",
   "private": true,
   "description": "VEIL: Privacy-Preserving Browser Vision Agent with Verified Security Kernel (SIH Grand Finale)",
   "scripts": {
+    "sih": "node scripts/launch-sih.js",
+    "setup:sih": "node scripts/setup-sih.js",
+    "certify:sih": "node scripts/certify-sih.js",
+    "benchmark:sih": "node sih/run-sih-benchmark.js",
     "demo": "node demo-sites/server.js",
     "demo:test": "node demo-sites/server.js --test",
-    "benchmark:sih": "node sih/run-sih-benchmark.js",
     "test": "node test.js",
-    "test:kernel": "node veil-extension/benchmark/test-kernel-reality.js"
+    "test:kernel": "node veil-extension/benchmark/test-kernel-reality.js",
+    "test:ipc": "node real-lab/runner/extension-ipc-test.js",
+    "test:lifecycle": "node real-lab/runner/lifecycle-test.js"
   },
   "devDependencies": {
     "jsdom": "^30.0.1"

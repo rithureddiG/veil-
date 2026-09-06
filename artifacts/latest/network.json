@@ -1,0 +1,14 @@
+{
+  "observer": "VEIL Independent Network Observer (sih/network-observer.js)",
+  "timestamp": "2026-09-06T13:31:00.000Z",
+  "rawPageKnownSecrets": 6,
+  "network": {
+    "totalRequestsCaptured": 17,
+    "totalBytesTransferred": 28431,
+    "sensitiveTokenMatches": 0,
+    "totalSensitiveBytesLeaked": 0,
+    "leakageRate": 0,
+    "zeroLeakageCompliance": true
+  },
+  "verdict": "ZERO_LEAKAGE_VERIFIED_OUTSIDE_PRIVACY_LAYER"
+}

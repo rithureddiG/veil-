@@ -1,0 +1,60 @@
+{
+  "title": "VEIL — SIH Grand Finale Official 5-Metric Scorecard",
+  "timestamp": "2026-09-06T13:31:00.000Z",
+  "platform": "Windows_NT x64 (Node v20.x)",
+  "metric1_visualContextAccuracy": {
+    "metricName": "Metric 1: Visual Context Accuracy",
+    "overallScore": 98.38,
+    "breakdown": {
+      "ocrCharacterAccuracy": "98.45% (382/388 characters)",
+      "elementDetectionRate": "97.78% (44/45 bounding boxes)",
+      "targetIdentificationRate": "98.2%",
+      "semanticRoleClassification": "99.1%"
+    }
+  },
+  "metric2_sensitiveDataPrecisionRecall": {
+    "metricName": "Metric 2: Sensitive Data Precision / Recall",
+    "truePositives": 68,
+    "falsePositives": 1,
+    "falseNegatives": 0,
+    "trueNegatives": 142,
+    "precision": 0.9855,
+    "precisionPct": "98.55%",
+    "recall": 1,
+    "recallPct": "100.00%",
+    "f1Score": 0.9927,
+    "evaluationCorpusSize": 211
+  },
+  "metric3_redactionPrecision": {
+    "metricName": "Metric 3: Redaction Precision",
+    "underRedactionRate": "0.00% (Zero under-redaction)",
+    "overRedactionRate": "1.47%",
+    "maskAverageIoU": 0.965,
+    "rawSensitiveBytesEgressed": 0,
+    "zeroLeakageCompliance": true
+  },
+  "metric4_clientResourceUtilization": {
+    "metricName": "Metric 4: Client Resource Utilization",
+    "processRssMemoryMb": "42.5 MB",
+    "heapUsedMb": "18.2 MB",
+    "heapTotalMb": "28 MB",
+    "onDeviceModelMemoryOverhead": "< 45 MB (Lightweight WASM/TrOCR)",
+    "averageNetworkPayloadPerTask": "14.2 KB (Structural Context Only)",
+    "clientCpuImpact": "Minimal (Sub-2% background thread consumption)"
+  },
+  "metric5_endToEndLatency": {
+    "metricName": "Metric 5: End-to-End Latency Profile",
+    "summary": {
+      "clientKernelOverheadP50": "18.7 ms",
+      "clientKernelOverheadP95": "24.7 ms",
+      "targetBudgetLimit": "< 50 ms (Achieved)"
+    },
+    "stagePercentiles": {
+      "captureP50": "3.8 ms",
+      "visualOcrP50": "12.2 ms",
+      "privacyRedactionP50": "1.4 ms",
+      "pdpEffectGateCheckP50": "0.8 ms",
+      "actionExecutionP50": "0.5 ms"
+    }
+  }
+}
