@@ -1,0 +1,34 @@
+{
+  "spec": "veil.kernel.ref/v1",
+  "version": "2.3.0",
+  "states": [
+    "IDLE",
+    "REQUESTED",
+    "EVALUATING",
+    "AUTHORIZED",
+    "CAPABILITY_ISSUED",
+    "EXECUTING",
+    "VERIFYING",
+    "COMMITTED",
+    "ABORTED"
+  ],
+  "transitions": [
+    { "from": "IDLE", "input": "PROPOSAL", "to": "REQUESTED" },
+    { "from": "REQUESTED", "input": "EVALUATE", "to": "EVALUATING" },
+    { "from": "EVALUATING", "input": "POLICY_ALLOW", "to": "AUTHORIZED" },
+    { "from": "EVALUATING", "input": "POLICY_DENY", "to": "ABORTED" },
+    { "from": "AUTHORIZED", "input": "MINT_CAPABILITY", "to": "CAPABILITY_ISSUED" },
+    { "from": "CAPABILITY_ISSUED", "input": "CONSUME_CAPABILITY", "to": "EXECUTING" },
+    { "from": "CAPABILITY_ISSUED", "input": "REPLAY_CAPABILITY", "to": "ABORTED" },
+    { "from": "CAPABILITY_ISSUED", "input": "STATE_MISMATCH", "to": "ABORTED" },
+    { "from": "EXECUTING", "input": "DISPATCH_EFFECT", "to": "VERIFYING" },
+    { "from": "VERIFYING", "input": "POSTCONDITION_PASS", "to": "COMMITTED" },
+    { "from": "VERIFYING", "input": "POSTCONDITION_FAIL", "to": "ABORTED" }
+  ],
+  "invariants": [
+    "NoUnauthorizedExecution: forall e, Executed(e) -> ValidCapability(e)",
+    "SingleUseReplayResistance: Consume(c) -> not Valid(c)",
+    "StateBinding: stateHash(plan) != stateHash(exec) -> Abort",
+    "SecretIsolation: forall s in Secrets, ModelObserves(s) = false"
+  ]
+}
