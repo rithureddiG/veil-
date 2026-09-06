@@ -1,13 +1,15 @@
 /**
- * VEIL — Autonomous Multi-Step Agent Orchestrator & Finite State Machine
+ * VEIL — Autonomous Multi-Step Agent Orchestrator & Zero-Trust Kernel FSM
  *
  * Enforces:
  *   1. Hard Step Budget (MAX_STEPS = 5) to prevent runaway loops.
  *   2. Re-perceive after EVERY action (protects against DOM mutation attacks).
  *   3. Finite State Machine:
  *      IDLE -> PERCEIVING -> AUDITING -> REASONING -> VALIDATING -> WAITING_FOR_HUMAN -> REVALIDATING -> EXECUTING -> RE_PERCEIVING -> FINISHED | BLOCKED
- *   4. Human-in-the-Loop Confirmation Gate on HIGH_RISK actions.
- *   5. Step-by-Step Telemetry & Tamper-Evident Ledger Logging.
+ *   4. Cryptographic State-Binding: Computes canonical stateHash per perception step.
+ *   5. Capability-Based Execution: Issues ephemeral Action Capability tokens before dispatch.
+ *   6. Privileged Human-in-the-Loop Confirmation Gate on HIGH_RISK actions.
+ *   7. Tamper-Evident Hash-Chained Ledger Logging.
  */
 
 (function () {
@@ -30,8 +32,16 @@
     MAX_STEPS_REACHED: 'MAX_STEPS_REACHED'
   };
 
+  const capabilityManager = typeof require !== 'undefined'
+    ? require('./capability-manager.js')
+    : (typeof window !== 'undefined' ? window.VeilCapabilityManager : null);
+
+  const stateHasher = typeof require !== 'undefined'
+    ? require('./state-hasher.js')
+    : (typeof window !== 'undefined' ? window.VeilStateHasher : null);
+
   /**
-   * Orchestrates multi-step autonomous goal execution with human confirmation gating.
+   * Orchestrates multi-step autonomous goal execution with capability gating.
    */
   async function runAutonomousLoop(taskInstruction, callbacks = {}) {
     const {
@@ -62,15 +72,21 @@
     while (currentStep < MAX_STEPS) {
       currentStep++;
       const stepT0 = performance.now();
-      const stepIso = new Date().toISOString();
 
-      // --- STEP 1: PERCEPTION ---
+      // --- STEP 1: PERCEPTION & STATE HASHING ---
       state = STATES.PERCEIVING;
-      onStepUpdate({ step: currentStep, state, message: `Step ${currentStep}: Scanning DOM & redacting PII...` });
+      onStepUpdate({ step: currentStep, state, message: `Step ${currentStep}: Scanning DOM, redacting PII & computing stateHash...` });
 
       const detections = scanAndRedactFn();
       const sensitiveElements = new Set(detections.map(d => d.element).filter(Boolean));
       const context = buildContextFn(getDoc(), detections);
+
+      // Compute canonical DOM stateHash
+      let currentStateHash = 'unanchored_state';
+      if (stateHasher && stateHasher.computeStateHash && getDoc()) {
+        currentStateHash = stateHasher.computeStateHash(getDoc()).stateHash;
+      }
+      context.stateHash = currentStateHash;
 
       // --- STEP 2: PRIVACY AUDIT ---
       state = STATES.AUDITING;
@@ -83,11 +99,11 @@
         return result;
       }
 
-      recordEventFn('PRIVACY_AUDIT_PASSED', 'firewall', { step: currentStep, sensitiveCount: audit.sensitiveRegions, leakedCount: 0 });
+      recordEventFn('PRIVACY_AUDIT_PASSED', 'firewall', { step: currentStep, sensitiveCount: audit.sensitiveRegions, stateHash: currentStateHash.slice(0, 12) + '...' });
 
       // --- STEP 3: REMOTE REASONING ---
       state = STATES.REASONING;
-      onStepUpdate({ step: currentStep, state, message: `Step ${currentStep}: Remote VLM reasoning over sanitized skeleton...` });
+      onStepUpdate({ step: currentStep, state, message: `Step ${currentStep}: Remote reasoning over sanitized skeleton...` });
 
       let serverResponse;
       try {
@@ -107,14 +123,15 @@
       }
 
       const action = serverResponse.action;
+      const actionType = String(action.action || action.type || '').toLowerCase();
 
       // Check Terminal Action
-      if (action.action === 'none' || action.action === 'finish' || action.action === 'wait') {
+      if (actionType === 'none' || actionType === 'finish' || actionType === 'wait') {
         state = STATES.FINISHED;
         recordEventFn('AGENT_TASK_FINISHED', 'orchestrator', { step: currentStep, reasoning: action.reasoning || 'Goal completed' });
         stepTraces.push({
           step: currentStep,
-          action: action.action,
+          action: actionType,
           target: 'Goal Complete',
           durationMs: Math.round(performance.now() - stepT0),
           status: 'FINISHED'
@@ -124,7 +141,7 @@
         return result;
       }
 
-      // --- STEP 4: VALIDATION & RISK CLASSIFICATION ---
+      // --- STEP 4: VALIDATION & POLICY EVALUATION ---
       state = STATES.VALIDATING;
       let targetElement = resolveTargetFn(action.target, getDoc());
       const risk = classifyRiskFn(action, targetElement, sensitiveElements);
@@ -136,7 +153,7 @@
         recordEventFn('ACTION_BLOCKED', 'safety_guard', { step: currentStep, reason: risk.reason });
         stepTraces.push({
           step: currentStep,
-          action: action.action,
+          action: actionType,
           target: (action.target && (action.target.description || action.target.text)) || 'Unknown Target',
           durationMs: Math.round(performance.now() - stepT0),
           status: 'BLOCKED',
@@ -147,7 +164,12 @@
         return result;
       }
 
-      // --- STEP 4b: HIGH-RISK HUMAN CONFIRMATION GATE ---
+      const origin = (typeof location !== 'undefined' && location.origin) || 'localhost';
+      const targetFp = stateHasher && stateHasher.computeElementFingerprint && targetElement
+        ? stateHasher.computeElementFingerprint(targetElement)
+        : ((action.target && action.target.id) || 'any');
+
+      // --- STEP 4b: PRIVILEGED HUMAN CONFIRMATION GATE ---
       if (risk.requiresConfirmation || risk.level === 'HIGH_RISK') {
         state = STATES.WAITING_FOR_HUMAN;
         onStepUpdate({
@@ -155,14 +177,15 @@
           state,
           message: `Step ${currentStep}: ⚠ HIGH_RISK Action Proposed ("${(action.target && action.target.description) || 'Purchase'}") — Awaiting Human Confirmation...`
         });
-        recordEventFn('HUMAN_CONFIRMATION_REQUESTED', 'safety_guard', { step: currentStep, action: action.action, target: action.target });
+        recordEventFn('HUMAN_CONFIRMATION_REQUESTED', 'safety_guard', { step: currentStep, action: actionType, target: action.target });
 
-        // Genuinely pause FSM awaiting human click
         const userApproved = await confirmationFn({
           action,
           targetElement,
+          targetFingerprint: targetFp,
           riskInfo: risk,
-          origin: (typeof location !== 'undefined' && location.origin) || 'Local Origin'
+          origin,
+          stateHash: currentStateHash
         });
 
         if (!userApproved) {
@@ -170,7 +193,7 @@
           recordEventFn('HUMAN_CONFIRMATION_DENIED', 'safety_guard', { step: currentStep });
           stepTraces.push({
             step: currentStep,
-            action: action.action,
+            action: actionType,
             target: (action.target && (action.target.description || action.target.text)) || 'High Risk Action',
             durationMs: Math.round(performance.now() - stepT0),
             status: 'BLOCKED',
@@ -183,10 +206,14 @@
 
         recordEventFn('HUMAN_CONFIRMATION_APPROVED', 'safety_guard', { step: currentStep });
 
-        // --- STEP 4c: PRE-EXECUTION REVALIDATION (State integrity after modal) ---
+        // --- STEP 4c: PRE-EXECUTION REVALIDATION (TOCTOU / State integrity check) ---
         state = STATES.REVALIDATING;
-        onStepUpdate({ step: currentStep, state, message: `Step ${currentStep}: Revalidating target integrity...` });
-        const integrityCheck = verifyIntegrityFn(action, targetElement, getDoc());
+        onStepUpdate({ step: currentStep, state, message: `Step ${currentStep}: Revalidating target & state integrity...` });
+        const integrityCheck = verifyIntegrityFn(action, targetElement, getDoc(), {
+          expectedStateHash: currentStateHash,
+          expectedOrigin: origin
+        });
+
         if (!integrityCheck.valid && !integrityCheck.ok) {
           state = STATES.BLOCKED;
           recordEventFn('MUTATION_TRAP_BLOCKED', 'safety_guard', { step: currentStep, reason: integrityCheck.reason });
@@ -199,37 +226,54 @@
         }
       }
 
-      // --- STEP 5: EXECUTION ---
-      state = STATES.EXECUTING;
-      onStepUpdate({ step: currentStep, state, message: `Step ${currentStep}: Disagreeing/Executing sanitized action...` });
+      // --- STEP 4d: ISSUE ACTION CAPABILITY TOKEN ---
+      let capabilityToken = null;
+      if (capabilityManager && capabilityManager.issueCapability) {
+        capabilityToken = capabilityManager.issueCapability({
+          actionType,
+          targetFingerprint: targetFp,
+          origin,
+          stateHash: currentStateHash,
+          purpose: 'agent_loop_step',
+          secretId: action.valueRef || null,
+          ttlMs: 15000
+        });
+        action.capabilityId = capabilityToken.capabilityId;
+        action.stateHash = currentStateHash;
+      }
 
-      const execResult = executeActionFn(action, targetElement);
+      // --- STEP 5: EXECUTION (Capability-Authorized) ---
+      state = STATES.EXECUTING;
+      onStepUpdate({ step: currentStep, state, message: `Step ${currentStep}: Executing capability-authorized action...` });
+
+      const execResult = executeActionFn(action, targetElement, sensitiveElements, origin);
       recordEventFn('ACTION_EXECUTED', 'executor', {
         step: currentStep,
-        action: action.action,
-        success: execResult.success,
-        usedValueRef: !!execResult.valueRef
+        action: actionType,
+        success: execResult.ok !== false && execResult.success !== false,
+        usedValueRef: !!execResult.secretUsed,
+        capabilityId: (capabilityToken && capabilityToken.capabilityId) || null
       });
 
       stepTraces.push({
         step: currentStep,
-        action: action.action,
+        action: actionType,
         target: (action.target && (action.target.description || action.target.text)) || 'Resolved Target',
-        valueRef: execResult.valueRef,
+        valueRef: execResult.secretId || action.valueRef,
         durationMs: Math.round(performance.now() - stepT0),
-        status: execResult.success ? 'EXECUTED' : 'FAILED',
-        error: execResult.error
+        status: (execResult.ok !== false && execResult.success !== false) ? 'EXECUTED' : 'FAILED',
+        error: execResult.reason || execResult.error
       });
 
-      const isSuccess = execResult && (execResult.success === true || execResult.ok === true || execResult.success !== false && execResult.ok !== false);
+      const isSuccess = execResult && (execResult.success === true || execResult.ok === true || (execResult.success !== false && execResult.ok !== false));
       if (!isSuccess) {
         state = STATES.FAILED;
-        const result = { ok: false, state, reason: `Execution failed: ${(execResult && execResult.error) || 'Unknown execution error'}`, stepTraces, totalMs: Math.round(performance.now() - t0) };
+        const result = { ok: false, state, reason: `Execution failed: ${(execResult && (execResult.reason || execResult.error)) || 'Unknown execution error'}`, stepTraces, totalMs: Math.round(performance.now() - t0) };
         onComplete(result);
         return result;
       }
 
-      // Short breathing room between steps
+      // Breathing room between steps
       if (delayMs > 0) {
         await new Promise(r => setTimeout(r, delayMs));
       }

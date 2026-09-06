@@ -3,7 +3,10 @@
   "name": "VEIL — privacy firewall for browser agents",
   "version": "1.0.0",
   "description": "See locally. Reason remotely. Reveal nothing sensitive. On-device visual perception & privacy firewall for browser agents.",
-  "permissions": ["activeTab", "tabs", "storage"],
+  "permissions": ["activeTab", "tabs", "storage", "sidePanel"],
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
   "host_permissions": [
     "http://127.0.0.1:8000/*",
     "http://localhost:8000/*",
@@ -22,6 +25,14 @@
       "matches": ["http://*/*", "https://*/*", "file:///*"],
       "js": [
         "core/session.js",
+        "core/security-ledger.js",
+        "core/state-hasher.js",
+        "core/kernel/protected-effects.js",
+        "core/kernel/policy-decision-point.js",
+        "core/kernel/taint-engine.js",
+        "core/kernel/egress-firewall.js",
+        "core/capability-manager.js",
+        "core/kernel/transaction-engine.js",
         "core/policy-engine.js",
         "core/dom-utils.js",
         "core/detector.js",
@@ -31,9 +42,9 @@
         "core/failure-analyzer.js",
         "core/mutation-guard.js",
         "core/context-builder.js",
+        "core/veil-ir.js",
         "core/privacy-audit.js",
         "core/risk-classifier.js",
-        "core/security-ledger.js",
         "core/action-resolver.js",
         "core/action-executor.js",
         "core/workflow-runner.js",
