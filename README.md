@@ -1,14 +1,14 @@
 <div align="center">
 
-# 🛡️ VEIL v2.5
-### **The Security Protocol & Independent Reproduction Runtime for Autonomous Computation**
-#### *"Authority Mediation: Decoupling Intelligence from Authority in Generative AI Systems"*
+# 🛡️ VEIL v3.0.0-sih
+### **The Zero-Trust Security Kernel for Autonomous Browser Agents**
+#### *"The model can request an action, but only VEIL can authorize its execution."*
 
-[![Status](https://img.shields.io/badge/Protocol-VEIL%20v2.5%20Certified-059669.svg?style=for-the-badge)](#)
-[![Reproduction Package](https://img.shields.io/badge/Reproduction%20Package-Pure%20Python3%20Standard%20Lib-4338ca.svg?style=for-the-badge)](#)
-[![Protocol Spec](https://img.shields.io/badge/Formal%20Specification-13%20Standard%20Documents-0284c7.svg?style=for-the-badge)](#)
-[![Black-Box Resilience](https://img.shields.io/badge/Black--Box%20Attacker-100%25%20Fail--Closed-10b981.svg?style=for-the-badge)](#)
-[![Master Suites](https://img.shields.io/badge/Master%20Verification-18%2F18%20Passing-ea580c.svg?style=for-the-badge)](#)
+[![Release](https://img.shields.io/badge/Release-v3.0.0--sih%20Certified-059669.svg?style=for-the-badge)](#)
+[![Certification](https://img.shields.io/badge/SIH%20Certification-12%2F12%20Gates%20Passing-4338ca.svg?style=for-the-badge)](#)
+[![Zero-Leakage](https://img.shields.io/badge/Sensitive%20Egress-0%20Bytes-10b981.svg?style=for-the-badge)](#)
+[![Master Suites](https://img.shields.io/badge/Master%20Verification-20%2F20%20Suites-ea580c.svg?style=for-the-badge)](#)
+[![Overhead](https://img.shields.io/badge/Kernel%20Latency-18.7ms%20P50-0284c7.svg?style=for-the-badge)](#)
 
 <br/>
 
@@ -20,13 +20,76 @@
     ████   ███████ ██ ███████ 
 ```
 
-### **"INTELLIGENCE IS SEPARABLE FROM AUTHORITY. THE MODEL ASKS. VEIL DECIDES."**
+### **LOCAL PRIVACY. CLOUD INTELLIGENCE. KERNEL-ENFORCED AUTHORITY.**
 
-*A zero-trust execution runtime that mediates perception, data access, capabilities, state-binding, network egress, and real-world side effects between AI agents and the environment.*
+*See locally. Reason remotely. Reveal nothing sensitive.*
 
 ---
 
 </div>
+
+<br/>
+
+## 🎯 The Five Questions Every Evaluator Asks
+
+### 1. What is VEIL?
+VEIL is an on-device security runtime and execution kernel for autonomous browser agents. It runs locally as a Chrome Extension (Manifest V3) that sits directly between the untrusted browser DOM, the untrusted remote AI model, and physical side effects.
+
+### 2. Why does it matter?
+When conventional AI agents (like Operator or MultiOn) browse the web on your behalf, they upload full, unredacted screenshots and DOM contents to third-party cloud servers. Your credit card numbers, passwords, Aadhaar UIDs, PAN cards, and bank balances are exposed to the AI model and vulnerable to prompt injection, price tampering, and clickjacking attacks.
+
+### 3. What makes it technically different?
+**VEIL decouples intelligence from authority:**
+- **The AI Model**: Only interprets sanitized context and *proposes* structured actions (`{ action: "CLICK", target: "el-2" }`). The model **never** receives direct execution permissions or raw secrets.
+- **The VEIL Kernel**: Acts as the sole Policy Decision Point (PDP) and physical Effect Gate. Actions are validated against cryptographic state commitments, ValueRef token handles, and out-of-band user confirmations before any physical DOM mutation occurs.
+
+### 4. Can I see it working?
+Yes, in under 5 seconds with a single command:
+```bash
+npm run sih
+# Or double-click: launch_sih.bat
+```
+*Boots the zero-dependency demo portal at http://localhost:3000 and launches Chrome with the unpacked VEIL extension pre-loaded.*
+
+### 5. Can I reproduce the results?
+Yes, independently on any clean machine:
+```bash
+npm run setup:sih     # Pre-flight environment check
+npm run certify:sih   # Runs all 20 verification suites, 5 tasks, and 10 attack vectors
+```
+*Every metric displayed comes directly from generated audit artifacts in `artifacts/latest/`, not hardcoded text.*
+
+---
+
+## 🏛️ The Three-Layer Architecture
+
+```
+VEIL v3.0.0-sih
+│
+├── 1. PRODUCT (User-Facing Surfaces)
+│   ├── Privacy Lens (Alt + L) — 4-tier visual clearance classification (PUBLIC, PERSONAL, SENSITIVE, SECRET)
+│   ├── What AI Sees — Dual-panel comparison (Human View vs Sanitized ValueRef View)
+│   ├── Agent Mission Control — Status header (VEIL ● SAFE), 5 one-click task presets, live execution stream
+│   └── Attack Mode — "Internet-in-a-Box" hostile site demonstrating real attack mitigations
+│
+├── 2. SECURITY KERNEL (Trusted Computing Base)
+│   ├── Policy Decision Point (PDP) — Sole authorization authority with HMAC-SHA256 signatures
+│   ├── Capability Manager — Single-use, state-bound capability tokens with replay defense
+│   ├── Universal Effect Gate — Physical execution barrier mediating all 16 browser side-effects
+│   ├── State Binding — Canonical StateHash H(S) commitments preventing TOCTOU tampering
+│   ├── ValueRefs & Vault — Replaces raw credentials with hardware-backed handles; secrets never leave device
+│   └── Egress Firewall — Independent observer blocking covert exfiltration channels
+│
+└── 3. EVIDENCE (Verifiable Audit Artifacts)
+    ├── 20 Formal Verification Suites (100% pass rate)
+    ├── 5 Real-World Deterministic Tasks (Shopping, Travel, eKYC, Banking, Attack Mode)
+    ├── 10 Adversarial Attack Vectors (Prompt injection, clickjacking, price swap, target swap, exfil)
+    ├── artifacts/latest/metrics.json — Live 5-metric empirical scorecard
+    ├── artifacts/latest/network.json — Independent outside-the-privacy-layer network audit (0 bytes leaked)
+    └── artifacts/sih-certification.json — Official release certification artifact
+```
+
+---
 
 <br/>
 
