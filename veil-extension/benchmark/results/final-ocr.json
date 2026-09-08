@@ -1,6 +1,6 @@
 {
   "phase": "FINAL_REAL_PIXEL_OCR",
-  "timestamp": "2026-09-08T04:40:27.231Z",
+  "timestamp": "2026-09-08T05:21:49.781Z",
   "ocrEngine": {
     "name": "Tesseract-WASM-Local",
     "version": "2.1.0",
@@ -29,7 +29,7 @@
         "email"
       ],
       "domAloneDetections": 0,
-      "ocrLatencyMs": 4.55,
+      "ocrLatencyMs": 4.56,
       "pass": true
     },
     {
@@ -43,7 +43,7 @@
         "phone"
       ],
       "domAloneDetections": 0,
-      "ocrLatencyMs": 1.11,
+      "ocrLatencyMs": 1.1,
       "pass": true
     },
     {
@@ -57,7 +57,7 @@
         "credit_card"
       ],
       "domAloneDetections": 0,
-      "ocrLatencyMs": 0.81,
+      "ocrLatencyMs": 0.7,
       "pass": true
     },
     {
@@ -71,7 +71,7 @@
         "aadhaar"
       ],
       "domAloneDetections": 0,
-      "ocrLatencyMs": 0.26,
+      "ocrLatencyMs": 0.27,
       "pass": true
     },
     {
@@ -85,7 +85,7 @@
         "pan"
       ],
       "domAloneDetections": 0,
-      "ocrLatencyMs": 0.35,
+      "ocrLatencyMs": 0.27,
       "pass": true
     },
     {
@@ -95,7 +95,7 @@
       "expectedTypes": [],
       "detectedTypes": [],
       "domAloneDetections": 0,
-      "ocrLatencyMs": 0.21,
+      "ocrLatencyMs": 0.24,
       "pass": true
     },
     {
@@ -111,7 +111,7 @@
         "phone"
       ],
       "domAloneDetections": 0,
-      "ocrLatencyMs": 0.23,
+      "ocrLatencyMs": 0.26,
       "pass": true
     },
     {
@@ -127,7 +127,7 @@
         "aadhaar"
       ],
       "domAloneDetections": 0,
-      "ocrLatencyMs": 0.18,
+      "ocrLatencyMs": 0.22,
       "pass": true
     },
     {
@@ -141,7 +141,7 @@
         "aadhaar"
       ],
       "domAloneDetections": 0,
-      "ocrLatencyMs": 0.38,
+      "ocrLatencyMs": 0.36,
       "pass": true
     },
     {
@@ -151,7 +151,7 @@
       "expectedTypes": [],
       "detectedTypes": [],
       "domAloneDetections": 0,
-      "ocrLatencyMs": 0.75,
+      "ocrLatencyMs": 0.83,
       "pass": true
     }
   ]
